@@ -57,6 +57,7 @@ select, input, textarea { font: inherit; color: var(--text); background: var(--i
 .toggle input { width: 22px; height: 22px; accent-color: var(--text); }
 a { color: inherit; word-break: break-all; }
 .report { font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all; background: var(--input); border-radius: 12px; padding: 10px; margin-top: 8px; }
+.scroll-box { max-height: 40vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .ok { color: var(--ok); } .bad { color: var(--danger); }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; margin-top: 8px; }
 `

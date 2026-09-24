@@ -4,7 +4,7 @@ import { isConversationLanguage, type ConversationLanguage } from '../stt/langua
 import { isSttProviderId, type SttProviderId } from '../stt/registry'
 import { isLlmProviderId, type LlmProviderId } from '../llm/registry'
 
-export const SETTINGS_VERSION = 1
+export const SETTINGS_VERSION = 2
 
 export type MicSource = 'glasses' | 'phone'
 export type RunMode = 'demo' | 'live'
@@ -37,7 +37,7 @@ export interface Settings {
   /** Language of the suggestions: same as the conversation, or a fixed one. */
   suggestionLanguage: 'same' | ConversationLanguage
   /** Pause after the other person's sentence before asking for suggestions. */
-  pauseMs: 500 | 900 | 1500 | 2500
+  pauseMs: 300 | 600 | 900 | 1500
   /** Minimum time between two LLM requests. */
   minIntervalSec: 3 | 6 | 10 | 20
   /** Maximum LLM requests per minute. */
@@ -59,7 +59,7 @@ export const DEFAULT_SETTINGS: Settings = {
   llmProvider: null,
   llmModels: {},
   suggestionLanguage: 'same',
-  pauseMs: 900,
+  pauseMs: 300,
   minIntervalSec: 6,
   maxPerMinute: 6,
 }
@@ -89,7 +89,10 @@ export function migrateSettings(raw: unknown): Settings {
     llmProvider: pick(r.llmProvider, (v): v is LlmProviderId | null => v === null || isLlmProviderId(v), DEFAULT_SETTINGS.llmProvider),
     llmModels: sanitizeMap(r.llmModels, isLlmProviderId),
     suggestionLanguage: pick(r.suggestionLanguage, (v): v is Settings['suggestionLanguage'] => v === 'same' || isConversationLanguage(v), DEFAULT_SETTINGS.suggestionLanguage),
-    pauseMs: pick(r.pauseMs, (v): v is Settings['pauseMs'] => [500, 900, 1500, 2500].includes(v as number), DEFAULT_SETTINGS.pauseMs),
+    // v1 defaulted to 900 ms on top of the STT's own end-of-sentence wait; v2 lowers the default.
+    pauseMs: r.version === SETTINGS_VERSION
+      ? pick(r.pauseMs, (v): v is Settings['pauseMs'] => [300, 600, 900, 1500].includes(v as number), DEFAULT_SETTINGS.pauseMs)
+      : DEFAULT_SETTINGS.pauseMs,
     minIntervalSec: pick(r.minIntervalSec, (v): v is Settings['minIntervalSec'] => [3, 6, 10, 20].includes(v as number), DEFAULT_SETTINGS.minIntervalSec),
     maxPerMinute: pick(r.maxPerMinute, (v): v is Settings['maxPerMinute'] => [3, 6, 10].includes(v as number), DEFAULT_SETTINGS.maxPerMinute),
   }

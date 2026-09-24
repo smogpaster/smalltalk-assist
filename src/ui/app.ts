@@ -30,7 +30,7 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
     document.documentElement.lang = ctx.settings.get().uiLanguage === 'auto' ? navigator.language : ctx.settings.get().uiLanguage
     const status = statusChip(snapshot, ctx)
     const page =
-      tab === 'home' ? renderHome(ctx, snapshot) : tab === 'settings' ? renderSettings(ctx, schedule) : renderDiagnostics(ctx, schedule)
+      tab === 'home' ? renderHome(ctx, snapshot) : tab === 'settings' ? renderSettings(ctx, () => schedule()) : renderDiagnostics(ctx, () => schedule())
     const tabs = el(
       'nav',
       { class: 'tabs' },
@@ -48,22 +48,26 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
   // Coalesce bursts (interim transcripts arrive every ~200 ms). Deliberately a
   // timer, not requestAnimationFrame: rAF never fires while the WebView is
   // hidden (simulator window, locked phone), which would freeze the UI state.
-  const schedule = () => {
+  const schedule = (delayMs = 50) => {
     if (scheduled) return
     scheduled = true
-    setTimeout(render, 50)
+    setTimeout(render, delayMs)
   }
 
   ctx.session.subscribe(next => {
     snapshot = next
-    schedule()
+    // Transcript updates arrive every ~100 ms; the diagnostics page does not
+    // need them live and must stay scrollable.
+    schedule(tab === 'diagnostics' ? 1000 : 50)
   })
-  ctx.settings.subscribe(schedule)
+  ctx.settings.subscribe(() => schedule())
+  // The trace changes often; re-render at most once per second so iOS
+  // scrolling on the diagnostics page is not interrupted constantly.
   onTrace(() => {
-    if (tab === 'diagnostics') schedule()
+    if (tab === 'diagnostics') schedule(1000)
   })
   render()
-  return { refresh: schedule }
+  return { refresh: () => schedule() }
 }
 
 function statusChip(s: SessionSnapshot, ctx: UiContext): HTMLElement {

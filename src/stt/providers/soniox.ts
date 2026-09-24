@@ -66,6 +66,8 @@ export class SonioxProvider implements SttProvider {
         ...(auto ? { enable_language_identification: true } : { language_hints: [options.language] }),
         enable_speaker_diarization: options.diarization,
         enable_endpoint_detection: true,
+        // Default is 2000 ms; for live suggestions a sentence should close sooner.
+        max_endpoint_delay_ms: 800,
       }),
     )
 

@@ -83,6 +83,8 @@ export function renderDiagnostics(ctx: UiContext, rerender: () => void): HTMLEle
     {},
     el('h2', {}, t('ui.nav.diagnostics')),
     el('p', { class: 'dim' }, t('diag.intro')),
+    el('button', { class: 'btn', on: { click: () => void copyReport() } }, state.copied ? t('diag.copied') : t('diag.copy')),
+    el('div', { style: 'height:12px' }),
 
     el('div', { class: 'card' },
       el('p', {}, el('strong', {}, t('diag.ws.title'))),
@@ -126,10 +128,8 @@ export function renderDiagnostics(ctx: UiContext, rerender: () => void): HTMLEle
       el('p', {}, el('strong', {}, t('diag.trace.title'))),
       el('p', { class: 'dim' }, t('diag.trace.desc')),
       el('button', { class: 'btn secondary', on: { click: () => { clearTrace(); rerender() } } }, t('diag.trace.clear')),
-      el('div', { class: 'report' }, traceEntries().slice(-60).join('\n') || '-'),
+      traceBox(),
     ),
-
-    el('button', { class: 'btn', on: { click: () => void copyReport() } }, state.copied ? t('diag.copied') : t('diag.copy')),
   )
 }
 
@@ -162,6 +162,13 @@ async function copyText(text: string): Promise<boolean> {
   }
   area.remove()
   return ok
+}
+
+/** Newest entries at the bottom, scrolled into view after each render. */
+function traceBox(): HTMLElement {
+  const box = el('div', { class: 'report scroll-box' }, traceEntries().slice(-80).join('\n') || '-')
+  setTimeout(() => (box.scrollTop = box.scrollHeight), 0)
+  return box
 }
 
 function resultView(result: CheckResult | 'pending' | null, pendingText: string): HTMLElement | null {

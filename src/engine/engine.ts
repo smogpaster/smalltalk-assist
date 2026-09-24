@@ -23,7 +23,7 @@ export interface EngineTiming {
 }
 
 export const DEFAULT_TIMING: EngineTiming = {
-  pauseMs: 900,
+  pauseMs: 300,
   silenceMs: 4000,
   minIntervalMs: 6000,
   maxPerMinute: 6,

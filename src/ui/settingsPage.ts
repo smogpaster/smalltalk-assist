@@ -220,10 +220,10 @@ function llmCard(ctx: UiContext, rerender: () => void): HTMLElement {
     ], value => ctx.settings.update({ suggestionLanguage: value as Settings['suggestionLanguage'] })),
     el('p', { class: 'field-label' }, t('settings.pace.title')),
     selectField(t('settings.pace.pause'), s.pauseMs, [
-      { value: 500, label: '0,5 s' },
+      { value: 300, label: '0,3 s' },
+      { value: 600, label: '0,6 s' },
       { value: 900, label: '0,9 s' },
       { value: 1500, label: '1,5 s' },
-      { value: 2500, label: '2,5 s' },
     ], value => ctx.settings.update({ pauseMs: value })),
     selectField(t('settings.pace.interval'), s.minIntervalSec, [
       { value: 3, label: '3 s' },

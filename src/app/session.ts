@@ -77,6 +77,9 @@ export class ConversationSession {
   private reconnectAttempt = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private detectedLanguage: string | null = null
+  /** Wall-clock start of the current STT stream; result times are relative to it. */
+  private sttStartedAt = 0
+  private firstResultTraced = false
 
   constructor(private readonly deps: SessionDeps) {}
 
@@ -242,6 +245,8 @@ export class ConversationSession {
       return
     }
     this.stt = stt
+    this.sttStartedAt = Date.now()
+    this.firstResultTraced = false
     trace('session', 'stt connected', { provider: providers.stt.id, ms: Date.now() - started, connection })
   }
 
@@ -284,7 +289,13 @@ export class ConversationSession {
       endMs: result.endMs,
     }
     this.transcript.upsert(segment)
-    if (segment.isFinal) trace('session', 'utterance', { speaker: segment.speaker, chars: segment.text.length })
+    // lagMs: how long after the spoken words the result arrived (network + provider).
+    const lagMs = Math.round(Date.now() - this.sttStartedAt - result.endMs)
+    if (!this.firstResultTraced) {
+      this.firstResultTraced = true
+      trace('session', 'first stt result', { afterConnectMs: Date.now() - this.sttStartedAt, lagMs })
+    }
+    if (segment.isFinal) trace('session', 'utterance', { speaker: segment.speaker, chars: segment.text.length, lagMs })
     this.engine?.onSegment(segment)
     this.emit()
   }
