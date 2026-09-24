@@ -2,7 +2,7 @@ import { toProviderError, type ProviderError } from '../core/errors'
 import type { Suggestion, TranscriptSegment } from '../core/types'
 import { trace } from '../diag/trace'
 import type { LlmProvider } from '../llm/types'
-import { parseNames, parsePartialSuggestions, parseSuggestions, type NameNote } from './format'
+import { outline, parseNames, parsePartialSuggestions, parseSuggestions, type NameNote } from './format'
 import { buildSpecialRequest, buildSuggestionRequest, type PromptContext, type PromptFeatures, type SpecialKind } from './prompt'
 import { RateLimiter } from './rateLimit'
 import type { Transcript } from './transcript'
@@ -253,7 +253,7 @@ export class SuggestionEngine {
       const suggestions = parseSuggestions(output)
       trace('engine', 'response', { ms: this.now() - started, firstMs: firstAt, chars: output.length, suggestions: suggestions.length })
       if (suggestions.length > 0) this.options.onSuggestions(suggestions, false, special)
-      else trace('engine', 'unparseable answer', { chars: output.length })
+      else trace('engine', 'unparseable answer', { chars: output.length, shape: outline(output) })
       if (wantsNames) {
         const names = parseNames(output)
         if (names.length) this.options.onNames?.(names)

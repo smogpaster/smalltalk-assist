@@ -93,7 +93,7 @@ export function buildSpecialRequest(kind: SpecialKind, input: Omit<PromptInput, 
   const system = [
     'You are a discreet conversation helper. The wearer of smart glasses reads your answer at a glance during a live conversation.',
     special.task(count),
-    `Write in ${languageName(input.outputLanguage)}. Each item at most 14 words, no emoji.`,
+    `Write in ${languageName(input.outputLanguage)}. Each item at most 14 words, no emoji, no quotation marks in the text.`,
     ...contextLines(input.context),
     `Answer ONLY with compact JSON: {"s":[{"k":"${special.kind}","t":"..."}]}`,
   ].join('\n')
@@ -117,7 +117,7 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
   const system = [
     'You are a discreet small-talk helper. The wearer of smart glasses reads your suggestions at a glance during a live conversation.',
     `Suggest ${input.count} things the wearer could say next, written in ${language}.`,
-    'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotes around the text; never repeat what was already said.',
+    'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotation marks anywhere in the text; never repeat what was already said.',
     'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
     'If the partner\'s last line is a question, the first suggestion must be a short answer idea to exactly that question (kind "r").',
     ...featureLines(input.features),

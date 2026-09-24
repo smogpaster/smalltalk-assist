@@ -30,7 +30,8 @@ export function encodeSuggestions(suggestions: readonly Suggestion[]): string {
  */
 export function parseSuggestions(output: string): Suggestion[] {
   const json = extractJson(output)
-  if (json === undefined) return []
+  // Invalid JSON (typically an unescaped quote inside a text): read the items one by one.
+  if (json === undefined) return looseItems(output)
   const list = Array.isArray(json) ? json : (json as { s?: unknown; suggestions?: unknown }).s ?? (json as { suggestions?: unknown }).suggestions
   if (!Array.isArray(list)) return []
 
@@ -110,5 +111,37 @@ export function parsePartialSuggestions(partial: string): Suggestion[] {
     }
     if (kind && text.trim()) result.push({ kind, text: text.trim() })
   }
+  // Nothing strict matched: fall back to the tolerant reader on closed objects.
+  return result.length ? result : looseItems(partial)
+}
+
+/**
+ * Tolerant reader for answers that are not valid JSON. Takes every closed
+ * {...} object, reads "k" and the "t" text up to its closing quote before
+ * the end of the object (or before a following "k" key), so stray quotes
+ * inside the text survive.
+ */
+export function looseItems(text: string): Suggestion[] {
+  const result: Suggestion[] = []
+  for (const match of text.matchAll(/\{[^{}]*\}/g)) {
+    const object = match[0]
+    const kind = toKind(object.match(/"k"\s*:\s*"([a-z]+)"/i)?.[1])
+    const start = object.match(/"t"\s*:\s*"/)
+    if (!kind || !start || start.index === undefined) continue
+    let rest = object.slice(start.index + start[0].length)
+    const nextKey = rest.search(/"\s*,\s*"k"\s*:/)
+    rest = nextKey >= 0 ? rest.slice(0, nextKey) : rest.slice(0, rest.lastIndexOf('"'))
+    const value = rest.replace(/\\"/g, '"').replace(/\\n/g, ' ').replace(/\\\\/g, '\\').trim()
+    if (value) result.push({ kind, text: value })
+  }
   return result
+}
+
+/** Privacy-safe outline of an answer for the trace: string values replaced by their length. */
+export function outline(text: string): string {
+  return text
+    // Match strings in order so quotes pair up correctly; keep short keys like "k".
+    .replace(/"((?:[^"\\]|\\.)*)"/g, (match, inner: string) => (inner.length <= 2 ? match : `~${inner.length}`))
+    .replace(/\s+/g, ' ')
+    .slice(0, 160)
 }

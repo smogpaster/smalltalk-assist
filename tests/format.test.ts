@@ -38,3 +38,26 @@ describe('parsePartialSuggestions', () => {
     expect(parsePartialSuggestions('{"s":[')).toEqual([])
   })
 })
+
+describe('tolerant parsing', () => {
+  it('reads items with unescaped quotes inside the text', async () => {
+    const { parseSuggestions, parsePartialSuggestions } = await import('../src/engine/format')
+    const broken = '{"s":[{"k":"x","t":"Sag einfach "Bis bald" und lächle."},{"k":"x","t":"Ich muss leider los – schön war\'s!"}]}'
+    const expected = [
+      { kind: 'exit', text: 'Sag einfach "Bis bald" und lächle.' },
+      { kind: 'exit', text: "Ich muss leider los – schön war's!" },
+    ]
+    expect(parseSuggestions(broken)).toEqual(expected)
+    expect(parsePartialSuggestions(broken.slice(0, broken.indexOf('},') + 1))).toEqual([expected[0]])
+  })
+
+  it('handles t before k and escaped newlines', async () => {
+    const { looseItems } = await import('../src/engine/format')
+    expect(looseItems('[{"t":"Zeile\\neins "x"","k":"h"}]')).toEqual([{ kind: 'hint', text: 'Zeile eins "x"' }])
+  })
+
+  it('outlines answers without their content', async () => {
+    const { outline } = await import('../src/engine/format')
+    expect(outline('{"s":[{"k":"x","t":"Geheimer Inhalt"}]}')).toBe('{~1:[{"k":"x","t":~15}]}'.replace('~1', '"s"'))
+  })
+})
