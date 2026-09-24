@@ -70,7 +70,7 @@ async function bootstrap() {
     audio,
     showOnGlasses: text => {
       if (text === null) controller.refresh()
-      else void renderer.render({ header: 'DIAGNOSTICS', body: text })
+      else void renderer.render({ ...controller.view(), header: 'DIAGNOSTICS', body: text })
     },
   })
 

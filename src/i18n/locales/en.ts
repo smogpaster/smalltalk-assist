@@ -23,6 +23,10 @@ export const en = {
   'glasses.kind.term': 'i',
   'glasses.kind.hint': '•',
 
+  // Contextual menu (max 32 UTF-8 bytes each)
+  'menu.toggleSession': 'Start / Stop',
+  'menu.quiet': 'Quiet mode',
+
   // Phone UI – common
   'ui.status.idle': 'Ready',
   'ui.status.recording': 'Recording',

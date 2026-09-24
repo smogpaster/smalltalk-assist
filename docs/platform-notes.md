@@ -40,8 +40,28 @@ even-g2-notes, even-hub-devguide, and our own tests. Last checked 2026-09-24.
   OpenAI ✓, Gemini ✓, Mistral ✓, OpenRouter ✓, Groq ✓, Deepgram REST ✓,
   Speechmatics JWT ✓, Gladia ✓, Soniox temp key ✓, **AssemblyAI token ✗**,
   **Google Cloud STT: gRPC only ✗** → both excluded from v1.
-- WebSockets on iOS: reported failing by one app (Cue), working for others
-  (Soniox Note). Checked with the in-app Diagnostics page on real hardware.
+- WebSockets on iOS: **work** (verified 2026-09-24, iPhone iOS 18.7, Even app,
+  wss://stt-rt.soniox.com: open 469 ms, answer 578 ms). One other app (Cue)
+  had reported failures; the chunked-HTTP fallback stays as a reserve.
+
+## Verified on hardware (iPhone iOS 18.7, G2, R1, 2026-09-24)
+- Glasses mic frames: **1600 bytes = 50 ms** (simulator: 3200 bytes / 100 ms).
+- `speakerRole` works (self/other both reported), `direction` values like -90…90.
+- Tap: `sys:undef:<source>`; swipe: `text:1/2`; long press: `sys:9` then `sys:10`
+  **without** an extra tap; ring source = 2.
+- Exit dialog: double tap → ENTER (dialog shown) → EXIT on "No" → app keeps running.
+- Swiping on a text container with content makes the text bounce briefly;
+  an empty full-screen gesture layer behind the content avoids it.
+- Hot reload of the dev server restarts the app on the phone (looks like a crash):
+  use `npm run dev:device` for hardware tests.
+
+## Contextual menu (SDK ≥ 0.0.14, docs /docs/build/contextual-menu)
+- Opened by the OS with **tap, then long press** → our tap handler waits ~450 ms.
+- ≤ 10 items, ≤ 32 UTF-8 bytes each; system items (display off, brightness,
+  close app) are added by the OS.
+- Sequence: FOREGROUND_ENTER → menuItemClickEvent → FOREGROUND_EXIT; the page
+  stays mounted (no redraw needed).
+- `rebuildPageContainer` without `menuObject` clears our items – always send it.
 
 ## Storage
 - Only `bridge.setLocalStorage/getLocalStorage` persists reliably.

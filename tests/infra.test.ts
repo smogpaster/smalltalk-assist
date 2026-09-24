@@ -57,26 +57,36 @@ describe('GlassesRenderer', () => {
   it('creates the page once and only sends changed containers', async () => {
     const { bridge, calls } = fakeBridge()
     const r = new GlassesRenderer(bridge, new BridgeQueue())
-    await r.init({ header: 'H', body: 'B' })
-    await r.render({ header: 'H', body: 'B2' })
-    await r.render({ header: 'H', body: 'B2' })
+    await r.init({ header: 'H', body: 'B', menu: [] })
+    await r.render({ header: 'H', body: 'B2', menu: [] })
+    await r.render({ header: 'H', body: 'B2', menu: [] })
     expect(calls).toEqual(['create', 'upgrade body=B2'])
   })
 
   it('coalesces bursts to the latest view', async () => {
     const { bridge, calls } = fakeBridge()
     const r = new GlassesRenderer(bridge, new BridgeQueue())
-    await r.init({ header: 'H', body: '0' })
-    const renders = [1, 2, 3, 4].map(i => r.render({ header: 'H', body: String(i) }))
+    await r.init({ header: 'H', body: '0', menu: [] })
+    const renders = [1, 2, 3, 4].map(i => r.render({ header: 'H', body: String(i), menu: [] }))
     await Promise.all(renders)
     expect(calls).toEqual(['create', 'upgrade body=1', 'upgrade body=4'])
+  })
+
+  it('rebuilds the page when the menu changes, then continues with text updates', async () => {
+    const { bridge, calls } = fakeBridge()
+    const r = new GlassesRenderer(bridge, new BridgeQueue())
+    const menu = [{ id: 1, label: 'Start / Stopp' }]
+    await r.init({ header: 'H', body: 'B', menu })
+    await r.render({ header: 'H', body: 'B', menu: [{ id: 1, label: 'Start / Stop' }] })
+    await r.render({ header: 'H', body: 'C', menu: [{ id: 1, label: 'Start / Stop' }] })
+    expect(calls).toEqual(['create', 'rebuild', 'upgrade body=C'])
   })
 
   it('falls back to rebuild when startup creation fails, and never retries creation', async () => {
     const { bridge, calls } = fakeBridge(StartUpPageCreateResult.invalid)
     const r = new GlassesRenderer(bridge, new BridgeQueue())
-    await r.init({ header: 'H', body: 'B' })
-    await r.init({ header: 'H', body: 'B' })
+    await r.init({ header: 'H', body: 'B', menu: [] })
+    await r.init({ header: 'H', body: 'B', menu: [] })
     expect(calls).toEqual(['create', 'rebuild', 'rebuild'])
   })
 })
@@ -117,7 +127,8 @@ describe('i18n', () => {
     for (const catalog of [de, ja]) expect(Object.keys(catalog).sort()).toEqual(Object.keys(en).sort())
     for (const catalog of [en, de, ja]) {
       for (const [key, value] of Object.entries(catalog)) {
-        if (key.startsWith('glasses.')) expect(sanitizeForGlasses(value), key).toBe(value.trim())
+        if (key.startsWith('glasses.') || key.startsWith('menu.')) expect(sanitizeForGlasses(value), key).toBe(value.trim())
+        if (key.startsWith('menu.')) expect(new TextEncoder().encode(value).length, key).toBeLessThanOrEqual(32)
       }
     }
   })

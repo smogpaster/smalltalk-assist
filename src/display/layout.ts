@@ -2,7 +2,13 @@ import type { Suggestion } from '../core/types'
 import type { Translate } from '../i18n'
 import { LINE_HEIGHT, fitLines, sanitizeForGlasses, spreadLine } from './text'
 
-/** Canvas 576×288. One status line on top, one body container below. */
+/**
+ * Canvas 576×288. One status line on top, one body container below, and an
+ * invisible full-screen layer behind both that receives all gestures. The
+ * firmware animates a short scroll bounce on the gesture container when you
+ * swipe; on the empty layer that bounce is invisible, so the text stays still.
+ */
+export const INPUT_LAYER = { x: 0, y: 0, width: 576, height: 288 } as const
 export const HEADER = { x: 0, y: 0, width: 576, height: 34, padding: 3 } as const
 export const BODY = { x: 0, y: 34, width: 576, height: 254, padding: 4 } as const
 
@@ -27,9 +33,18 @@ export interface GlassesViewState {
   error?: string
 }
 
+export interface GlassesMenuItem {
+  /** Non-zero, unique. */
+  id: number
+  /** Max 32 UTF-8 bytes (firmware limit). */
+  label: string
+}
+
 export interface GlassesView {
   header: string
   body: string
+  /** Items for the OS contextual menu (tap, then long press). */
+  menu: readonly GlassesMenuItem[]
 }
 
 export function pageCount(total: number, perPage: number): number {
@@ -46,7 +61,7 @@ export function linesPerSuggestion(perPage: number): number {
   return Math.max(1, Math.min(MAX_LINES_PER_SUGGESTION, Math.floor((BODY_LINES - (n - 1)) / n)))
 }
 
-export function buildGlassesView(state: GlassesViewState, t: Translate): GlassesView {
+export function buildGlassesView(state: GlassesViewState, t: Translate, menu: readonly GlassesMenuItem[] = []): GlassesView {
   const status =
     state.phase === 'recording' ? t('glasses.rec') : state.phase === 'quiet' ? t('glasses.paused') : t('glasses.ready')
   const left = state.demo ? `${status}  ${t('glasses.mock')}` : status
@@ -58,7 +73,7 @@ export function buildGlassesView(state: GlassesViewState, t: Translate): Glasses
   const right = state.phase === 'recording' && pages > 1 ? `${page + 1}/${pages}` : ''
   const header = right ? spreadLine(left, right, HEADER_INNER_WIDTH) : left
 
-  return { header, body: buildBody(state, t, page, perPage) }
+  return { header, body: buildBody(state, t, page, perPage), menu }
 }
 
 function buildBody(state: GlassesViewState, t: Translate, page: number, perPage: number): string {

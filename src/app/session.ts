@@ -106,6 +106,8 @@ export class ConversationSession {
         // Conversation language settings arrive with the STT adapters (M3).
         outputLanguage: () => this.deps.settings().demoLanguage,
         count: () => SUGGESTIONS_PER_REQUEST,
+        // Quiet mode hides suggestions; don't pay for requests nobody sees.
+        paused: () => this.phase === 'quiet',
         onSuggestions: suggestions => {
           if (generation !== this.generation) return
           this.suggestions = suggestions
@@ -169,8 +171,10 @@ export class ConversationSession {
   toggleQuiet(): void {
     trace('session', 'toggle quiet', { phase: this.phase })
     if (this.phase === 'recording') this.phase = 'quiet'
-    else if (this.phase === 'quiet') this.phase = 'recording'
-    else return
+    else if (this.phase === 'quiet') {
+      this.phase = 'recording'
+      this.engine?.resume()
+    } else return
     this.emit()
   }
 
@@ -200,7 +204,7 @@ export class ConversationSession {
     }
     this.transcript.upsert(segment)
     if (segment.isFinal) trace('session', 'utterance', { speaker: segment.speaker, chars: segment.text.length })
-    if (this.phase === 'recording') this.engine?.onSegment(segment)
+    this.engine?.onSegment(segment)
     this.emit()
   }
 

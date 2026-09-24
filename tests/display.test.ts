@@ -71,6 +71,7 @@ describe('glasses layout', () => {
     expect(buildGlassesView({ phase: 'idle', demo: true, suggestions, page: 0, perPage: 2 }, t)).toEqual({
       header: '○ Bereit  DEMO',
       body: 'Tippen: Gespräch starten\nDoppeltippen: Beenden',
+      menu: [],
     })
     expect(buildGlassesView({ phase: 'quiet', demo: false, suggestions, page: 0, perPage: 2 }, t).body).not.toContain('Segeln')
   })

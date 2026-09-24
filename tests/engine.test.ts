@@ -116,3 +116,36 @@ describe('SuggestionEngine (milestone 1)', () => {
     expect(llm.calls).toHaveLength(0)
   })
 })
+
+describe('SuggestionEngine quiet mode', () => {
+  it('skips requests while paused and catches up once on resume', async () => {
+    vi.useFakeTimers()
+    const llm = new FakeLlm()
+    const transcript = new Transcript()
+    let paused = true
+    const results: Suggestion[][] = []
+    const engine = new SuggestionEngine({
+      llm,
+      transcript,
+      outputLanguage: () => 'de',
+      count: () => 3,
+      paused: () => paused,
+      onSuggestions: s => results.push(s),
+      onError: () => {},
+    })
+    const s1 = seg('1', 'Erstens.', 'other')
+    transcript.upsert(s1)
+    engine.onSegment(s1)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(llm.calls).toHaveLength(0)
+
+    paused = false
+    engine.resume()
+    engine.resume()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(llm.calls).toHaveLength(1)
+    expect(results).toHaveLength(1)
+    engine.stop()
+    vi.useRealTimers()
+  })
+})

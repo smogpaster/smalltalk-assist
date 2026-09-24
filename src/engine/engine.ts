@@ -16,6 +16,8 @@ export interface EngineOptions {
   /** How much conversation the LLM sees. */
   windowMs?: number
   requestTimeoutMs?: number
+  /** While true (quiet mode) no requests are sent; see resume(). */
+  paused?: () => boolean
   onSuggestions(suggestions: Suggestion[]): void
   onError(error: ProviderError): void
 }
@@ -30,6 +32,8 @@ export class SuggestionEngine {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
   private inFlight: AbortController | null = null
   private stopped = false
+  /** A trigger fired while paused; resume() catches up with one request. */
+  private missedWhilePaused = false
 
   constructor(private readonly options: EngineOptions) {}
 
@@ -51,6 +55,13 @@ export class SuggestionEngine {
     }, this.options.debounceMs ?? 700)
   }
 
+  /** Call when leaving quiet mode. */
+  resume(): void {
+    if (!this.missedWhilePaused || this.stopped) return
+    this.missedWhilePaused = false
+    void this.request()
+  }
+
   stop(): void {
     this.stopped = true
     this.clearDebounce()
@@ -64,6 +75,11 @@ export class SuggestionEngine {
   }
 
   private async request(): Promise<void> {
+    if (this.options.paused?.()) {
+      this.missedWhilePaused = true
+      trace('engine', 'skipped (quiet)')
+      return
+    }
     const segments = this.options.transcript.recentFinal(this.options.windowMs ?? 3 * 60_000)
     if (segments.length === 0) return
 

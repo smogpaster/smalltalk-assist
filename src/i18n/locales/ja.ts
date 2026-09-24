@@ -19,6 +19,9 @@ export const ja: Messages = {
   'glasses.kind.term': 'i',
   'glasses.kind.hint': '•',
 
+  'menu.toggleSession': '開始 / 停止',
+  'menu.quiet': 'サイレント',
+
   'ui.status.idle': '待機中',
   'ui.status.recording': '録音中',
   'ui.status.quiet': 'サイレント',

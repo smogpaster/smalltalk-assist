@@ -19,6 +19,9 @@ export const de: Messages = {
   'glasses.kind.term': 'i',
   'glasses.kind.hint': '•',
 
+  'menu.toggleSession': 'Start / Stopp',
+  'menu.quiet': 'Ruhemodus',
+
   'ui.status.idle': 'Bereit',
   'ui.status.recording': 'Aufnahme läuft',
   'ui.status.quiet': 'Ruhemodus',
