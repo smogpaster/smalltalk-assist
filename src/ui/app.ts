@@ -5,13 +5,15 @@ import type { UiContext } from './context'
 import { renderDiagnostics } from './diagnosticsPage'
 import { el } from './dom'
 import { renderHome } from './homePage'
+import { renderProfile } from './profilePage'
 import { renderSettings } from './settingsPage'
 import { injectStyles } from './styles'
 
-type Tab = 'home' | 'settings' | 'diagnostics'
+type Tab = 'home' | 'profile' | 'settings' | 'diagnostics'
 
 const TABS: { id: Tab; label: MessageKey }[] = [
   { id: 'home', label: 'ui.nav.home' },
+  { id: 'profile', label: 'ui.nav.profile' },
   { id: 'settings', label: 'ui.nav.settings' },
   { id: 'diagnostics', label: 'ui.nav.diagnostics' },
 ]
@@ -29,8 +31,12 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
     const t = ctx.t()
     document.documentElement.lang = ctx.settings.get().uiLanguage === 'auto' ? navigator.language : ctx.settings.get().uiLanguage
     const status = statusChip(snapshot, ctx)
+    const rerender = () => schedule()
     const page =
-      tab === 'home' ? renderHome(ctx, snapshot) : tab === 'settings' ? renderSettings(ctx, () => schedule()) : renderDiagnostics(ctx, () => schedule())
+      tab === 'home' ? renderHome(ctx, snapshot)
+      : tab === 'profile' ? renderProfile(ctx, rerender)
+      : tab === 'settings' ? renderSettings(ctx, rerender)
+      : renderDiagnostics(ctx, rerender)
     const tabs = el(
       'nav',
       { class: 'tabs' },
@@ -55,10 +61,14 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
   }
 
   ctx.session.subscribe(next => {
+    const phaseChanged = next.phase !== snapshot.phase
     snapshot = next
-    // Transcript updates arrive every ~100 ms; the diagnostics page does not
-    // need them live and must stay scrollable.
-    schedule(tab === 'diagnostics' ? 1000 : 50)
+    // Transcript updates arrive every ~100 ms. Only the conversation page needs
+    // them live; diagnostics refreshes slowly (must stay scrollable); pages
+    // with text fields re-render only on start/stop so typing is not lost.
+    if (tab === 'home') schedule(50)
+    else if (tab === 'diagnostics') schedule(1000)
+    else if (phaseChanged) schedule()
   })
   ctx.settings.subscribe(() => schedule())
   // The trace changes often; re-render at most once per second so iOS

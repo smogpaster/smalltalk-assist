@@ -9,6 +9,8 @@ import { attachPreviewKeys, previewRenderBridge } from './bridge/preview'
 import { BridgeQueue } from './bridge/queue'
 import { GlassesRenderer } from './display/renderer'
 import { createTranslator, resolveLanguage, type Translate, type UiLanguage } from './i18n'
+import { buildPromptContext } from './profiles/context'
+import { ProfileStore } from './profiles/store'
 import { KeyStore } from './settings/keys'
 import { BridgeKeyValueStore, LocalKeyValueStore } from './settings/kv'
 import type { Settings } from './settings/schema'
@@ -35,6 +37,12 @@ async function bootstrap() {
 
   let translate: Translate = translatorFor(settings.get())
   let uiLanguage = languageFor(settings.get())
+  const profiles = new ProfileStore(kv)
+  await profiles.load({
+    networking: translate('profile.default.networking'),
+    family: translate('profile.default.family'),
+    client: translate('profile.default.client'),
+  })
 
   const hub = new EventHub()
   if (bridge) hub.attach(bridge)
@@ -46,6 +54,7 @@ async function bootstrap() {
     settings: () => settings.get(),
     createProviders: createProvidersFactory(keys),
     fallbackLanguage: () => uiLanguage,
+    context: () => buildPromptContext(profiles.active(), profiles.person()),
   })
 
   const glassesBridge = bridge ?? previewRenderBridge
@@ -54,6 +63,7 @@ async function bootstrap() {
   const shutdown = async () => {
     await session.stop()
     await settings.flush()
+    await profiles.flush()
     hub.detach()
   }
 
@@ -76,6 +86,7 @@ async function bootstrap() {
     session,
     settings,
     keys,
+    profiles,
     t: () => translate,
     glassesView: () => controller.view(),
     inEvenApp,

@@ -15,10 +15,12 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ko: 'Korean',
 }
 
-/** Profile and conversation-partner context (filled in by milestone 5). */
+/** Profile and conversation-partner context (see profiles/context.ts). */
 export interface PromptContext {
-  /** Free-text lines about the wearer, the other person, tone, goal, topics to avoid. */
+  /** Background: tone, goal, about the wearer, about the other person. */
   lines: string[]
+  /** Topics that must not be brought up. */
+  avoid: string[]
 }
 
 export interface PromptInput {
@@ -28,6 +30,18 @@ export interface PromptInput {
   count: number
   withSpeakers: boolean
   context?: PromptContext
+}
+
+/**
+ * Context goes into the system part: it is stable for the whole conversation
+ * (cache friendly) and the avoid list is a rule, not a hint.
+ */
+function contextLines(context: PromptContext | undefined): string[] {
+  if (!context) return []
+  const out: string[] = []
+  if (context.lines.length) out.push('Background (use only when it fits naturally, never recite it):', ...context.lines.map(l => `- ${l}`))
+  if (context.avoid.length) out.push(`Never bring up or steer toward these topics: ${context.avoid.join('; ')}`)
+  return out
 }
 
 export function languageName(code: string): string {
@@ -46,11 +60,11 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
     `Suggest ${input.count} things the wearer could say next, written in ${language}.`,
     'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotes around the text; never repeat what was already said.',
     'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
+    ...contextLines(input.context),
     'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."},{"k":"r","t":"..."}]}',
   ].join('\n')
 
   const parts: string[] = []
-  if (input.context?.lines.length) parts.push(`Context:\n${input.context.lines.join('\n')}`)
   if (input.withSpeakers) parts.push('Speakers: ME = wearer, THEM = conversation partner, ? = unknown.')
   parts.push(`Conversation (most recent last):\n${formatForPrompt(input.segments, input.withSpeakers)}`)
 

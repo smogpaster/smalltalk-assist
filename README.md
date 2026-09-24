@@ -5,10 +5,10 @@ conversation, transcribes it and shows short small-talk suggestions (questions
 and reply ideas) on the glasses. Bring your own API keys; transcripts and
 suggestions live only in memory.
 
-> Status: **milestone 4** – demo mode, glasses display, gestures, contextual
+> Status: **milestone 5** – demo mode, glasses display, gestures, contextual
 > menu, diagnostics, live speech-to-text (Soniox, Deepgram, Speechmatics,
-> Gladia) and live AI suggestions (Claude, OpenAI, Gemini, Mistral and seven
-> OpenAI-compatible hosts). Profiles and speaker mapping follow in M5/M6.
+> Gladia), live AI suggestions (Claude, OpenAI, Gemini, Mistral and seven
+> OpenAI-compatible hosts), speaker mapping (me / other) and profiles.
 
 ## Requirements
 
@@ -122,6 +122,26 @@ allow browser (CORS) calls (checked 2026-09-24).
 - answers stream: the first suggestion appears before the answer is complete
 - quiet mode sends no requests
 
+## Profiles and conversation partner
+
+*Profile* tab: several profiles (starter set: Networking, Family party, Client
+meeting), each with tone (casual / professional / warm), *about me*, *topics to
+avoid* and an optional goal. For the next conversation you can add who you
+talk to (name, relationship, interests, mutual acquaintances, what to bring up
+or avoid). Everything goes into the system prompt – background as optional
+context, topics to avoid as a hard rule. Fields are capped at 600 characters;
+the conversation-partner info stays on the phone until you clear it.
+
+## Speaker mapping (me / other)
+
+With the glasses microphone the Even app classifies every 50 ms audio frame as
+*self* or *other*. Each finished utterance is matched to its frames by time
+and decided by majority; the STT provider's diarization label is learned from
+those decisions and used when frames are missing. During a live conversation
+the *Conversation* tab offers *Next sentence is me* (calibration) and *Swap
+speakers*. Suggestions are triggered by the other person's sentences; after
+the wearer's own sentence only after ~4 s of silence.
+
 ## Project structure
 
 ```
@@ -136,6 +156,7 @@ src/
   i18n/       de / en / ja catalogs (add a language = one file)
   llm/        LLM interface, SSE reader, adapters, provider registry
   mock/       scripted demo conversations, mock STT and LLM
+  profiles/   profiles, conversation partner, prompt context
   settings/   schema + migration, SDK key-value storage, API key store
   speakers/   diarization label → self/other
   stt/        STT interface, utterance assembler, adapters, provider registry

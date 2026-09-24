@@ -2,6 +2,7 @@ import type { ConversationSession } from '../app/session'
 import type { AudioInput } from '../audio/input'
 import type { GlassesView } from '../display/layout'
 import type { Translate } from '../i18n'
+import type { ProfileStore } from '../profiles/store'
 import type { KeyStore } from '../settings/keys'
 import type { SettingsStore } from '../settings/store'
 
@@ -10,6 +11,7 @@ export interface UiContext {
   session: ConversationSession
   settings: SettingsStore
   keys: KeyStore
+  profiles: ProfileStore
   t(): Translate
   glassesView(): GlassesView
   /** False in a plain desktop browser (no Even bridge). */

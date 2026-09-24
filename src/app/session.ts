@@ -5,6 +5,7 @@ import { trace } from '../diag/trace'
 import { clampPage } from '../display/layout'
 import { SuggestionEngine } from '../engine/engine'
 import { Transcript } from '../engine/transcript'
+import type { PromptContext } from '../engine/prompt'
 import type { LlmProvider } from '../llm/types'
 import type { Settings } from '../settings/schema'
 import { SpeakerMapper } from '../speakers/mapper'
@@ -52,6 +53,8 @@ export interface SessionDeps {
   createProviders(settings: Settings): SessionProviders
   /** Language for suggestions when the conversation language is auto and nothing was detected yet. */
   fallbackLanguage?: () => string
+  /** Active profile and conversation partner, read at every request (edits apply immediately). */
+  context?: () => PromptContext | undefined
 }
 
 type Listener = (snapshot: SessionSnapshot) => void
@@ -220,6 +223,8 @@ export class ConversationSession {
       transcript: this.transcript,
       outputLanguage: () => this.outputLanguage(),
       count: () => SUGGESTIONS_PER_REQUEST,
+      // The scripted demo keeps its canned answers; profiles apply to live mode.
+      context: () => (this.demo ? undefined : this.deps.context?.()),
       timing: () => {
         const s = this.deps.settings()
         return { pauseMs: s.pauseMs, minIntervalMs: s.minIntervalSec * 1000, maxPerMinute: s.maxPerMinute }
