@@ -34,6 +34,6 @@ npx evenhub pack app.json dist -o smalltalk-assist.ehpk -c   # also checks packa
 - [ ] Background image `store/background.png` (greyscale)
 - [ ] Screenshots from `store/screenshots/` (simulator captures)
 - [ ] Description, tagline, release notes per language from `docs/store-listing.md`
-- [ ] Privacy policy URL: GitHub Pages from `/docs` → `https://<github-user>.github.io/<repo>/privacy-policy.en.html` (and `.de.html`); reviewed, covers every permission
-- [ ] Tip link set in `src/support.ts` (or left empty to hide the card)
+- [ ] Privacy policy URL: https://smogpaster.github.io/smalltalk-assist/privacy-policy.en.html (German: `privacy-policy.de.html`), GitHub Pages from `/docs`; reviewed, covers every permission
+- [x] Tip link set in `src/support.ts` (https://ko-fi.com/smogpaster)
 - [ ] Release notes: 1–3 lines, describe what the app does (first release)
