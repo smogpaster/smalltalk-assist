@@ -3,7 +3,7 @@ import { createProviders } from './app/providers'
 import { ConversationSession } from './app/session'
 import { BridgeAudioInput } from './audio/input'
 import { connectBridge } from './bridge/connect'
-import { startRuntimeWatch, trace } from './diag/trace'
+import { persistTrace, startRuntimeWatch, trace } from './diag/trace'
 import { EventHub } from './bridge/hub'
 import { attachPreviewKeys, previewRenderBridge } from './bridge/preview'
 import { BridgeQueue } from './bridge/queue'
@@ -22,8 +22,11 @@ async function bootstrap() {
   const inEvenApp = bridge !== null
   trace('boot', 'bridge', { inEvenApp })
 
-  const settings = new SettingsStore(bridge ? new BridgeKeyValueStore(bridge, queue) : new LocalKeyValueStore())
+  if (bridge) bridge.onLaunchSource(source => trace('boot', 'launch source', { source }))
+  const kv = bridge ? new BridgeKeyValueStore(bridge, queue) : new LocalKeyValueStore()
+  const settings = new SettingsStore(kv)
   await settings.load()
+  await persistTrace(kv)
 
   let translate: Translate = translatorFor(settings.get())
 

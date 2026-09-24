@@ -1,5 +1,5 @@
 import { GLYPH_SAMPLES, checkFetch, checkWebSocket, countFrameStats, type CheckResult } from '../diag/checks'
-import { clearTrace, traceEntries } from '../diag/trace'
+import { clearTrace, previousRunEntries, traceEntries } from '../diag/trace'
 import type { UiContext } from './context'
 import { el } from './dom'
 
@@ -178,7 +178,9 @@ function report(ctx: UiContext): string {
     `websocket: ${fmt(state.ws)}`,
     `fetch: ${fmt(state.fetch)}`,
     `mic(${ctx.settings.get().micSource}): frames=${m.frames} bytes/frame=${m.frames ? Math.round(m.bytes / m.frames) : 0} roles=${JSON.stringify(m.roles)} directions=${[...m.directions].slice(0, 8).join(',') || 'null'}`,
-    `--- trace ---`,
+    `--- trace (this run) ---`,
     ...traceEntries(),
+    `--- trace (previous run) ---`,
+    ...previousRunEntries(),
   ].join('\n')
 }
