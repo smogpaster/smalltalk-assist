@@ -74,6 +74,7 @@ async function bootstrap() {
     renderer,
     session,
     translate: () => translate,
+    extras: () => settings.get().extras,
     onExit: shutdown,
   })
 

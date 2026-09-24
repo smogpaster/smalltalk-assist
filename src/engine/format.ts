@@ -67,6 +67,31 @@ function extractJson(output: string): unknown {
   }
 }
 
+export interface NameNote {
+  name: string
+  note: string
+}
+
+/**
+ * Names the model found in introductions (optional "n" field, only asked for
+ * when the name feature is on): {"n":[{"n":"Miriam","i":"solar start-up"}]}
+ */
+export function parseNames(output: string): NameNote[] {
+  const json = extractJson(output)
+  if (!json || typeof json !== 'object' || Array.isArray(json)) return []
+  const list = (json as { n?: unknown }).n
+  if (!Array.isArray(list)) return []
+  const out: NameNote[] = []
+  for (const item of list) {
+    if (!item || typeof item !== 'object') continue
+    const rec = item as Record<string, unknown>
+    const name = typeof rec.n === 'string' ? rec.n.trim() : ''
+    const note = typeof rec.i === 'string' ? rec.i.trim() : ''
+    if (name && name.length <= 40) out.push({ name, note: note.slice(0, 60) })
+  }
+  return out
+}
+
 const ITEM = /\{\s*"k"\s*:\s*"([a-z]+)"\s*,\s*"t"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g
 
 /**

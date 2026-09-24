@@ -23,6 +23,16 @@ export interface PromptContext {
   avoid: string[]
 }
 
+/** Optional extras that ride along with the normal request (no extra calls). */
+export interface PromptFeatures {
+  /** Report names from introductions in "n". */
+  names?: boolean
+  /** Allow one suggestion that refers back to an earlier point (kind "b"). */
+  recall?: boolean
+  /** Explain an uncommon term the partner used (kind "d"). */
+  terms?: boolean
+}
+
 export interface PromptInput {
   segments: readonly TranscriptSegment[]
   /** Language code for the suggestions. */
@@ -30,7 +40,11 @@ export interface PromptInput {
   count: number
   withSpeakers: boolean
   context?: PromptContext
+  features?: PromptFeatures
 }
+
+/** On-demand requests from the contextual menu or the lull detector. */
+export type SpecialKind = 'topic' | 'exit' | 'recap' | 'lull'
 
 /**
  * Context goes into the system part: it is stable for the whole conversation
@@ -42,6 +56,51 @@ function contextLines(context: PromptContext | undefined): string[] {
   if (context.lines.length) out.push('Background (use only when it fits naturally, never recite it):', ...context.lines.map(l => `- ${l}`))
   if (context.avoid.length) out.push(`Never bring up or steer toward these topics: ${context.avoid.join('; ')}`)
   return out
+}
+
+function featureLines(features: PromptFeatures | undefined): string[] {
+  if (!features) return []
+  const out: string[] = []
+  if (features.recall) out.push('One suggestion may instead pick up something the partner mentioned earlier and could be continued now (kind "b", e.g. "You mentioned … – how did it go?").')
+  if (features.terms) out.push('If the partner just used an uncommon technical term, abbreviation or name the wearer may not know, add one item of kind "d": "Term: explanation" (max 12 words). Otherwise no "d" item.')
+  if (features.names) out.push('If someone introduced themselves or was named in the conversation, list them in "n": [{"n":"Name","i":"2-5 word note"}]. Otherwise "n": [].')
+  return out
+}
+
+const SPECIAL_TASKS: Record<SpecialKind, { task: (count: number) => string; kind: string }> = {
+  topic: {
+    task: n => `The wearer wants to change the topic now. Suggest ${n} elegant, natural transitions to a new topic that fits the background and the conversation so far.`,
+    kind: 't',
+  },
+  exit: {
+    task: n => `The wearer wants to end the conversation now. Suggest ${n} polite, warm ways to wrap up (e.g. thank, refer to a next time), fitting the tone.`,
+    kind: 'x',
+  },
+  recap: {
+    task: () => 'Summarise the last minutes of the conversation for the wearer in at most 2 items of max 14 words each, focusing on what the partner said.',
+    kind: 'h',
+  },
+  lull: {
+    task: n => `The conversation has stalled. Suggest ${n} easy openers to get it going again, ideally tied to something said earlier or to the background.`,
+    kind: 't',
+  },
+}
+
+/** A single on-demand request (menu item or lull). */
+export function buildSpecialRequest(kind: SpecialKind, input: Omit<PromptInput, 'features'>): Pick<LlmRequest, 'system' | 'messages' | 'maxTokens' | 'json' | 'temperature'> {
+  const special = SPECIAL_TASKS[kind]
+  const count = kind === 'recap' ? 2 : Math.min(input.count, 2)
+  const system = [
+    'You are a discreet conversation helper. The wearer of smart glasses reads your answer at a glance during a live conversation.',
+    special.task(count),
+    `Write in ${languageName(input.outputLanguage)}. Each item at most 14 words, no emoji.`,
+    ...contextLines(input.context),
+    `Answer ONLY with compact JSON: {"s":[{"k":"${special.kind}","t":"..."}]}`,
+  ].join('\n')
+  const parts: string[] = []
+  if (input.withSpeakers) parts.push('Speakers: ME = wearer, THEM = conversation partner, ? = unknown.')
+  parts.push(`Conversation (most recent last):\n${formatForPrompt(input.segments, input.withSpeakers) || '(nothing said yet)'}`)
+  return { system, messages: [{ role: 'user', content: parts.join('\n\n') }], maxTokens: 70 * count + 60, temperature: 0.7, json: true }
 }
 
 export function languageName(code: string): string {
@@ -61,8 +120,11 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
     'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotes around the text; never repeat what was already said.',
     'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
     'If the partner\'s last line is a question, the first suggestion must be a short answer idea to exactly that question (kind "r").',
+    ...featureLines(input.features),
     ...contextLines(input.context),
-    'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."},{"k":"r","t":"..."}]}',
+    input.features?.names
+      ? 'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."}],"n":[]}'
+      : 'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."},{"k":"r","t":"..."}]}',
   ].join('\n')
 
   const parts: string[] = []
@@ -73,7 +135,7 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
     system,
     messages: [{ role: 'user', content: parts.join('\n\n') }],
     // ~40 tokens per suggestion plus JSON overhead; CJK needs a bit more.
-    maxTokens: 70 * input.count + 60,
+    maxTokens: 70 * input.count + 60 + (input.features?.names ? 60 : 0) + (input.features?.terms ? 40 : 0),
     temperature: 0.7,
     json: true,
   }

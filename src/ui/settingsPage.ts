@@ -4,7 +4,7 @@ import { trace } from '../diag/trace'
 import { UI_LANGUAGES, type MessageKey } from '../i18n'
 import { LLM_PROVIDERS, llmProviderInfo, type LlmProviderId } from '../llm/registry'
 import { maskKey } from '../settings/keys'
-import type { Settings } from '../settings/schema'
+import { EXTRA_IDS, type Settings } from '../settings/schema'
 import { CONVERSATION_LANGUAGES, LANGUAGE_NATIVE_NAMES, type ConversationLanguage } from '../stt/languages'
 import { STT_PROVIDERS, sttProviderInfo, type SttProviderId } from '../stt/registry'
 import type { UiContext } from './context'
@@ -35,6 +35,8 @@ export function renderSettings(ctx: UiContext, rerender: () => void): HTMLElemen
     sttCard(ctx, rerender),
     el('h2', {}, t('settings.section.llm')),
     llmCard(ctx, rerender),
+    el('h2', {}, t('settings.section.extras')),
+    extrasCard(ctx),
     el('h2', {}, t('settings.section.app')),
     el(
       'div',
@@ -236,6 +238,26 @@ function llmCard(ctx: UiContext, rerender: () => void): HTMLElement {
       { value: 6, label: '6' },
       { value: 10, label: '10' },
     ], value => ctx.settings.update({ maxPerMinute: value })),
+  )
+}
+
+// ---- Extras ---------------------------------------------------------------------
+
+function extrasCard(ctx: UiContext): HTMLElement {
+  const t = ctx.t()
+  const extras = ctx.settings.get().extras
+  return el(
+    'div',
+    { class: 'card' },
+    el('p', { class: 'dim' }, t('settings.extras.intro')),
+    ...EXTRA_IDS.map(id =>
+      el('div', {},
+        toggleField(t(`extra.${id}.label` as MessageKey), extras[id], value =>
+          ctx.settings.update({ extras: { ...ctx.settings.get().extras, [id]: value } })),
+        el('p', { class: 'dim', style: 'margin:-6px 0 10px 32px' }, t(`extra.${id}.desc` as MessageKey)),
+      ),
+    ),
+    el('p', { class: 'dim' }, t('extras.costHint')),
   )
 }
 

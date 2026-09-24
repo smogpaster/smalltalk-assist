@@ -38,6 +38,8 @@ export interface GlassesViewState {
   preview?: string
   /** STT connection is being restored. */
   reconnecting?: boolean
+  /** Short local hint above the suggestions (e.g. talk share). */
+  hint?: string
 }
 
 export interface GlassesMenuItem {
@@ -62,10 +64,10 @@ export function clampPage(page: number, total: number, perPage: number): number 
   return Math.min(Math.max(0, page), pageCount(total, perPage) - 1)
 }
 
-export function linesPerSuggestion(perPage: number): number {
+export function linesPerSuggestion(perPage: number, availableLines = BODY_LINES): number {
   const n = Math.max(1, perPage)
   // n suggestions separated by n-1 blank lines.
-  return Math.max(1, Math.min(MAX_LINES_PER_SUGGESTION, Math.floor((BODY_LINES - (n - 1)) / n)))
+  return Math.max(1, Math.min(MAX_LINES_PER_SUGGESTION, Math.floor((availableLines - (n - 1)) / n)))
 }
 
 export function buildGlassesView(state: GlassesViewState, t: Translate, menu: readonly GlassesMenuItem[] = []): GlassesView {
@@ -96,12 +98,15 @@ function buildBody(state: GlassesViewState, t: Translate, page: number, perPage:
     return preview ? `${t('glasses.listening')}\n${preview}` : t('glasses.listening')
   }
 
-  const maxLines = linesPerSuggestion(perPage)
-  return state.suggestions
+  const hint = state.hint ? fitLines(sanitizeForGlasses(state.hint), BODY_INNER_WIDTH, 1) : ''
+  // The hint takes one line plus a blank line.
+  const maxLines = linesPerSuggestion(perPage, hint ? BODY_LINES - 2 : BODY_LINES)
+  const suggestions = state.suggestions
     .slice(page * perPage, page * perPage + perPage)
     .map(s => {
       const marker = t(`glasses.kind.${s.kind}`)
       return fitLines(`${marker} ${sanitizeForGlasses(s.text)}`, BODY_INNER_WIDTH, maxLines)
     })
     .join('\n\n')
+  return hint ? `${hint}\n\n${suggestions}` : suggestions
 }

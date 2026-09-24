@@ -7,6 +7,11 @@ import { isLlmProviderId, type LlmProviderId } from '../llm/registry'
 export const SETTINGS_VERSION = 2
 
 export type MicSource = 'glasses' | 'phone'
+
+/** Optional features (milestone 7), all off by default. */
+export const EXTRA_IDS = ['topicChange', 'names', 'talkShare', 'lull', 'recall', 'terms', 'exitLine', 'recap'] as const
+export type ExtraId = (typeof EXTRA_IDS)[number]
+export type Extras = Record<ExtraId, boolean>
 export type RunMode = 'demo' | 'live'
 
 /**
@@ -42,6 +47,7 @@ export interface Settings {
   minIntervalSec: 3 | 6 | 10 | 20
   /** Maximum LLM requests per minute. */
   maxPerMinute: 3 | 6 | 10
+  extras: Extras
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -62,6 +68,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pauseMs: 300,
   minIntervalSec: 6,
   maxPerMinute: 6,
+  extras: Object.fromEntries(EXTRA_IDS.map(id => [id, false])) as Extras,
 }
 
 /**
@@ -95,7 +102,13 @@ export function migrateSettings(raw: unknown): Settings {
       : DEFAULT_SETTINGS.pauseMs,
     minIntervalSec: pick(r.minIntervalSec, (v): v is Settings['minIntervalSec'] => [3, 6, 10, 20].includes(v as number), DEFAULT_SETTINGS.minIntervalSec),
     maxPerMinute: pick(r.maxPerMinute, (v): v is Settings['maxPerMinute'] => [3, 6, 10].includes(v as number), DEFAULT_SETTINGS.maxPerMinute),
+    extras: sanitizeExtras(r.extras),
   }
+}
+
+function sanitizeExtras(raw: unknown): Extras {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return Object.fromEntries(EXTRA_IDS.map(id => [id, r[id] === true])) as Extras
 }
 
 /** Per-provider model names: known ids only, trimmed, non-empty, bounded. */

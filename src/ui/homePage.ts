@@ -60,6 +60,13 @@ export function renderHome(ctx: UiContext, s: SessionSnapshot): HTMLElement {
       s.error ? el('p', { class: 'error' }, t(`error.${s.error.kind}` as MessageKey)) : null),
     el('h2', {}, t('ui.glassesPreview')),
     el('div', { class: 'glasses', 'aria-label': t('ui.glassesPreview') }, el('div', { class: 'gh' }, view.header), view.body),
+    s.talkShareWarning !== null ? el('p', { class: 'dim' }, t('ui.talkShare', { pct: s.talkShareWarning })) : null,
+    s.names.length
+      ? el('div', {},
+          el('h2', {}, t('ui.names')),
+          el('div', { class: 'card' }, ...s.names.map(n => el('div', { class: 'line' }, el('strong', {}, n.name), n.note ? ` – ${n.note}` : ''))),
+        )
+      : null,
     el('h2', {}, t('ui.suggestions')),
     el('div', { class: 'card' }, ...suggestions),
     el('h2', {}, t('ui.transcript')),

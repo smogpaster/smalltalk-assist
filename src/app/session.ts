@@ -5,7 +5,8 @@ import { trace } from '../diag/trace'
 import { clampPage } from '../display/layout'
 import { SuggestionEngine } from '../engine/engine'
 import { Transcript } from '../engine/transcript'
-import type { PromptContext } from '../engine/prompt'
+import type { NameNote } from '../engine/format'
+import type { PromptContext, SpecialKind } from '../engine/prompt'
 import type { LlmProvider } from '../llm/types'
 import type { Settings } from '../settings/schema'
 import { SpeakerMapper } from '../speakers/mapper'
@@ -17,6 +18,13 @@ export type SessionPhase = 'idle' | 'starting' | 'recording' | 'quiet'
 const SUGGESTIONS_PER_REQUEST = 3
 /** Delays before reconnect attempts after the STT connection dropped. */
 const RECONNECT_DELAYS_MS = [1000, 3000, 6000]
+/** Silence that counts as a lull (extra "lull"). */
+const LULL_MS = 15_000
+/** Talk share: look at this much recent speech, warn above / clear below. */
+const TALK_SHARE_WINDOW_MS = 5 * 60_000
+const TALK_SHARE_MIN_SPEECH_MS = 45_000
+const TALK_SHARE_WARN = 0.7
+const TALK_SHARE_CLEAR = 0.6
 
 export interface SessionSnapshot {
   phase: SessionPhase
@@ -31,6 +39,10 @@ export interface SessionSnapshot {
   reconnecting: boolean
   /** The next finished utterance will be taken as the wearer's voice. */
   calibrating: boolean
+  /** Names heard in this conversation (extra "names"); memory only. */
+  names: readonly NameNote[]
+  /** Wearer's share of speaking time in percent when it is clearly too high (extra "talkShare"). */
+  talkShareWarning: number | null
 }
 
 export interface SessionProviders {
@@ -89,6 +101,8 @@ export class ConversationSession {
   private audioMs = 0
   /** A connection that reported a non-retryable error (key, credit) must not be reconnected. */
   private fatalConnection = -1
+  private names: NameNote[] = []
+  private talkShareWarning: number | null = null
 
   constructor(private readonly deps: SessionDeps) {}
 
@@ -111,6 +125,8 @@ export class ConversationSession {
       transcriptOnly: this.phase !== 'idle' && this.providers !== null && this.providers.llm === null,
       reconnecting: this.reconnectTimer !== null,
       calibrating: this.speakers.isCalibrating,
+      names: [...this.names],
+      talkShareWarning: this.talkShareWarning,
     }
   }
 
@@ -212,6 +228,25 @@ export class ConversationSession {
     this.emit()
   }
 
+  /** On-demand request from the contextual menu (topic change, exit line, recap). */
+  requestSpecial(kind: SpecialKind): boolean {
+    if (!this.engine || this.phase === 'idle') return false
+    if (this.phase === 'quiet') this.phase = 'recording'
+    trace('session', 'special request', { kind })
+    this.engine.requestSpecial(kind)
+    this.emit()
+    return true
+  }
+
+  /** Shows information (names, hints) in place of the suggestions until the next batch. */
+  showInfo(items: Suggestion[]): void {
+    if (this.phase === 'idle') return
+    if (this.phase === 'quiet') this.phase = 'recording'
+    this.suggestions = items
+    this.page = 0
+    this.emit()
+  }
+
   /** Called when the host brought the app back; the mic may have been dropped. */
   async resume(): Promise<void> {
     if (this.isActive && this.deps.audio?.active) await this.deps.audio.rearm()
@@ -225,9 +260,24 @@ export class ConversationSession {
       count: () => SUGGESTIONS_PER_REQUEST,
       // The scripted demo keeps its canned answers; profiles apply to live mode.
       context: () => (this.demo ? undefined : this.deps.context?.()),
+      features: () => {
+        const extras = this.deps.settings().extras
+        return { names: extras.names, recall: extras.recall, terms: extras.terms }
+      },
+      lullMs: () => (this.deps.settings().extras.lull ? LULL_MS : null),
+      onNames: names => {
+        if (generation !== this.generation) return
+        this.mergeNames(names)
+      },
       timing: () => {
         const s = this.deps.settings()
-        return { pauseMs: s.pauseMs, minIntervalMs: s.minIntervalSec * 1000, maxPerMinute: s.maxPerMinute }
+        return {
+          pauseMs: s.pauseMs,
+          minIntervalMs: s.minIntervalSec * 1000,
+          maxPerMinute: s.maxPerMinute,
+          // Callbacks need more history to refer back to.
+          ...(s.extras.recall ? { windowMs: 10 * 60_000, maxChars: 6000 } : {}),
+        }
       },
       // Quiet mode hides suggestions; don't pay for requests nobody sees.
       paused: () => this.phase === 'quiet',
@@ -332,6 +382,7 @@ export class ConversationSession {
       endMs: result.endMs,
     }
     this.transcript.upsert(segment)
+    if (segment.isFinal) this.updateTalkShare()
     // lagMs: how long after the spoken words the result arrived (network + provider).
     const lagMs = Math.round(Date.now() - this.sttStartedAt - result.endMs)
     if (!this.firstResultTraced) {
@@ -341,6 +392,37 @@ export class ConversationSession {
     if (segment.isFinal) trace('session', 'utterance', { speaker: segment.speaker, chars: segment.text.length, lagMs })
     this.engine?.onSegment(segment)
     this.emit()
+  }
+
+  private mergeNames(found: NameNote[]): void {
+    for (const entry of found) {
+      const existing = this.names.find(n => n.name.toLowerCase() === entry.name.toLowerCase())
+      if (existing) existing.note = entry.note || existing.note
+      else this.names.push({ ...entry })
+    }
+    trace('session', 'names', { count: this.names.length })
+    this.emit()
+  }
+
+  /** Warns when the wearer talks much more than the other person (needs speaker mapping). */
+  private updateTalkShare(): void {
+    if (!this.deps.settings().extras.talkShare) {
+      this.talkShareWarning = null
+      return
+    }
+    const finals = this.transcript.recentFinal(TALK_SHARE_WINDOW_MS)
+    let self = 0
+    let other = 0
+    for (const s of finals) {
+      const ms = Math.max(0, s.endMs - s.startMs)
+      if (s.speaker === 'self') self += ms
+      else if (s.speaker === 'other') other += ms
+    }
+    const total = self + other
+    if (total < TALK_SHARE_MIN_SPEECH_MS) return
+    const share = self / total
+    if (share >= TALK_SHARE_WARN) this.talkShareWarning = Math.round(share * 100)
+    else if (share < TALK_SHARE_CLEAR) this.talkShareWarning = null
   }
 
   /** Stops everything and forgets the conversation. */
@@ -357,6 +439,8 @@ export class ConversationSession {
     this.suggestions = []
     this.page = 0
     this.detectedLanguage = null
+    this.names = []
+    this.talkShareWarning = null
   }
 
   private emit(): void {

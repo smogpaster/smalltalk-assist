@@ -2,8 +2,8 @@ import { toProviderError, type ProviderError } from '../core/errors'
 import type { Suggestion, TranscriptSegment } from '../core/types'
 import { trace } from '../diag/trace'
 import type { LlmProvider } from '../llm/types'
-import { parsePartialSuggestions, parseSuggestions } from './format'
-import { buildSuggestionRequest, type PromptContext } from './prompt'
+import { parseNames, parsePartialSuggestions, parseSuggestions, type NameNote } from './format'
+import { buildSpecialRequest, buildSuggestionRequest, type PromptContext, type PromptFeatures, type SpecialKind } from './prompt'
 import { RateLimiter } from './rateLimit'
 import type { Transcript } from './transcript'
 
@@ -40,6 +40,11 @@ export interface EngineOptions {
   timing?: () => Partial<EngineTiming>
   /** Profile / other-person context (milestone 5). */
   context?: () => PromptContext | undefined
+  /** Extras that ride along with every request (names, recall, terms). */
+  features?: () => PromptFeatures
+  /** Silence (ms) after which conversation openers are requested; null = off. */
+  lullMs?: () => number | null
+  onNames?(names: NameNote[]): void
   requestTimeoutMs?: number
   /** While true (quiet mode) no requests are sent; see resume(). */
   paused?: () => boolean
@@ -65,6 +70,7 @@ export class SuggestionEngine {
   private missedWhilePaused = false
   /** Final transcript characters already covered by a request. */
   private coveredChars = 0
+  private lullTimer: ReturnType<typeof setTimeout> | null = null
   private readonly limiter: RateLimiter
   private readonly now: () => number
 
@@ -76,6 +82,7 @@ export class SuggestionEngine {
   /** Feed every transcript update into the engine. */
   onSegment(segment: TranscriptSegment): void {
     if (this.stopped) return
+    this.armLull()
     if (!segment.isFinal) {
       // Someone is talking: postpone. A running request is kept; the next
       // trigger replaces (aborts) it.
@@ -107,9 +114,28 @@ export class SuggestionEngine {
     void this.fire(reason, true)
   }
 
+  /** On-demand request (topic change, exit line, recap). Ignores rate limits. */
+  requestSpecial(kind: SpecialKind): void {
+    if (this.stopped) return
+    this.clearTimer()
+    const timing = this.timing()
+    const segments = trimToChars(this.options.transcript.recentFinal(timing.windowMs), timing.maxChars)
+    const request = buildSpecialRequest(kind, {
+      segments,
+      outputLanguage: this.options.outputLanguage(),
+      count: this.options.count(),
+      withSpeakers: segments.some(s => s.speaker !== 'unknown'),
+      context: this.options.context?.(),
+    })
+    this.limiter.record(this.now())
+    void this.run(request, kind, false)
+  }
+
   stop(): void {
     this.stopped = true
     this.clearTimer()
+    if (this.lullTimer) clearTimeout(this.lullTimer)
+    this.lullTimer = null
     this.inFlight?.abort()
     this.inFlight = null
   }
@@ -124,6 +150,21 @@ export class SuggestionEngine {
       this.timer = null
       void this.fire(reason, force)
     }, delayMs)
+  }
+
+  /** (Re)starts the silence watch; fires once per silence, only after something was said. */
+  private armLull(): void {
+    if (this.lullTimer) clearTimeout(this.lullTimer)
+    this.lullTimer = null
+    const lullMs = this.options.lullMs?.()
+    if (!lullMs) return
+    this.lullTimer = setTimeout(() => {
+      this.lullTimer = null
+      if (this.stopped || this.options.paused?.()) return
+      if (this.options.transcript.recentFinal(this.timing().windowMs).length === 0) return
+      trace('engine', 'lull detected', { ms: lullMs })
+      this.requestSpecial('lull')
+    }, lullMs)
   }
 
   private clearTimer(): void {
@@ -159,19 +200,24 @@ export class SuggestionEngine {
   }
 
   private async request(finals: TranscriptSegment[], timing: EngineTiming, reason: string): Promise<void> {
-    this.inFlight?.abort()
-    const controller = new AbortController()
-    this.inFlight = controller
-
     const segments = trimToChars(finals, timing.maxChars)
+    const features = this.options.features?.()
     const request = buildSuggestionRequest({
       segments,
       outputLanguage: this.options.outputLanguage(),
       count: this.options.count(),
       withSpeakers: segments.some(s => s.speaker !== 'unknown'),
       context: this.options.context?.(),
+      features,
     })
-    trace('engine', 'request', { reason, segments: segments.length, provider: this.options.llm.id })
+    await this.run(request, reason, features?.names === true)
+  }
+
+  private async run(request: ReturnType<typeof buildSuggestionRequest>, reason: string, wantsNames: boolean): Promise<void> {
+    this.inFlight?.abort()
+    const controller = new AbortController()
+    this.inFlight = controller
+    trace('engine', 'request', { reason, provider: this.options.llm.id })
     const started = this.now()
     let streamed = ''
     let shown = 0
@@ -196,6 +242,10 @@ export class SuggestionEngine {
       trace('engine', 'response', { ms: this.now() - started, firstMs: firstAt, chars: output.length, suggestions: suggestions.length })
       if (suggestions.length > 0) this.options.onSuggestions(suggestions, false)
       else trace('engine', 'unparseable answer', { chars: output.length })
+      if (wantsNames) {
+        const names = parseNames(output)
+        if (names.length) this.options.onNames?.(names)
+      }
     } catch (err) {
       const error = toProviderError(this.options.llm.id, err)
       trace('engine', 'request failed', { kind: error.kind, status: error.status ?? null })

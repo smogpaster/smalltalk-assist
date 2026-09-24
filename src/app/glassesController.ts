@@ -6,6 +6,7 @@ import type { BridgeQueue } from '../bridge/queue'
 import { buildGlassesView, type GlassesView } from '../display/layout'
 import type { GlassesRenderer } from '../display/renderer'
 import type { Translate } from '../i18n'
+import type { Extras } from '../settings/schema'
 import { MenuId, buildMenu } from './menu'
 import type { ConversationSession } from './session'
 
@@ -16,6 +17,8 @@ export interface GlassesControllerDeps {
   renderer: GlassesRenderer
   session: ConversationSession
   translate: () => Translate
+  /** Enabled extras (menu items, hints). */
+  extras: () => Extras
   /** Stop hardware and flush state; the WebView is about to close. */
   onExit(): Promise<void>
 }
@@ -75,9 +78,10 @@ export class GlassesController {
         error: s.error ? this.deps.translate()(`error.${s.error.kind}`) : undefined,
         preview: s.transcriptOnly ? s.transcript.at(-1)?.text : undefined,
         reconnecting: s.reconnecting,
+        hint: s.talkShareWarning !== null ? this.deps.translate()('extra.talkShare.hint', { pct: s.talkShareWarning }) : undefined,
       },
       this.deps.translate(),
-      buildMenu(this.deps.translate()),
+      buildMenu(this.deps.translate(), this.deps.extras()),
     )
   }
 
@@ -151,10 +155,24 @@ export class GlassesController {
         trace('glasses', 'menu item', { id: event.itemId })
         if (event.itemId === MenuId.toggleSession) await this.toggleSession('menu')
         else if (event.itemId === MenuId.quiet) session.toggleQuiet()
+        else if (event.itemId === MenuId.topic) session.requestSpecial('topic')
+        else if (event.itemId === MenuId.exitLine) session.requestSpecial('exit')
+        else if (event.itemId === MenuId.recap) session.requestSpecial('recap')
+        else if (event.itemId === MenuId.names) this.showNames()
         return
       case 'longPressRelease':
         return
     }
+  }
+
+  private showNames(): void {
+    const t = this.deps.translate()
+    const names = this.deps.session.snapshot().names
+    this.deps.session.showInfo(
+      names.length
+        ? names.map(n => ({ kind: 'hint' as const, text: n.note ? `${n.name} – ${n.note}` : n.name }))
+        : [{ kind: 'hint' as const, text: t('extra.names.none') }],
+    )
   }
 
   private async toggleSession(reason: string): Promise<void> {

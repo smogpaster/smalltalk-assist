@@ -5,10 +5,11 @@ conversation, transcribes it and shows short small-talk suggestions (questions
 and reply ideas) on the glasses. Bring your own API keys; transcripts and
 suggestions live only in memory.
 
-> Status: **milestone 5** – demo mode, glasses display, gestures, contextual
+> Status: **milestone 7** – demo mode, glasses display, gestures, contextual
 > menu, diagnostics, live speech-to-text (Soniox, Deepgram, Speechmatics,
 > Gladia), live AI suggestions (Claude, OpenAI, Gemini, Mistral and seven
-> OpenAI-compatible hosts), speaker mapping (me / other) and profiles.
+> OpenAI-compatible hosts), speaker mapping (me / other), profiles and
+> optional extras. Next: onboarding, privacy texts, store preparation (M8).
 
 ## Requirements
 
@@ -141,6 +142,22 @@ those decisions and used when frames are missing. During a live conversation
 the *Conversation* tab offers *Next sentence is me* (calibration) and *Swap
 speakers*. Suggestions are triggered by the other person's sentences; after
 the wearer's own sentence only after ~4 s of silence.
+
+## Extras (Settings → Extras, all off by default)
+
+| Extra | How it works | Cost |
+|---|---|---|
+| ☰ Change topic | menu item → 2 transitions to a new topic fitting the profile | 1 request |
+| ☰ Remember names | names from introductions, returned alongside suggestions; menu shows them | slightly longer requests |
+| Talk share hint | local: your share of speaking time over 5 min; hint above 70 % (clears below 60 %) | none |
+| Lull detection | after 15 s without speech, 2 openers | 1 request per lull |
+| Callbacks | one suggestion may pick up an earlier point (10 min window) | slightly longer requests |
+| Term explainer | one-line explanation of an unusual term the partner used | slightly longer requests |
+| ☰ Exit line | menu item → 2 polite ways to wrap up | 1 request |
+| ☰ Recap | menu item → 2-line summary of the last minutes | 1 request |
+
+☰ = contextual menu on the glasses (tap, then long press). Names and all
+other extra output live in memory only and are gone when the conversation ends.
 
 ## Project structure
 
