@@ -25,6 +25,8 @@ const TALK_SHARE_WINDOW_MS = 5 * 60_000
 const TALK_SHARE_MIN_SPEECH_MS = 45_000
 const TALK_SHARE_WARN = 0.7
 const TALK_SHARE_CLEAR = 0.6
+/** Answers the wearer explicitly asked for (menu) stay visible at least this long. */
+const SPECIAL_HOLD_MS = 15_000
 
 export interface SessionSnapshot {
   phase: SessionPhase
@@ -103,6 +105,10 @@ export class ConversationSession {
   private fatalConnection = -1
   private names: NameNote[] = []
   private talkShareWarning: number | null = null
+  /** While an explicit answer is on screen, regular suggestions wait here. */
+  private holdUntil = 0
+  private heldSuggestions: Suggestion[] | null = null
+  private holdTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(private readonly deps: SessionDeps) {}
 
@@ -230,7 +236,10 @@ export class ConversationSession {
 
   /** On-demand request from the contextual menu (topic change, exit line, recap). */
   requestSpecial(kind: SpecialKind): boolean {
-    if (!this.engine || this.phase === 'idle') return false
+    if (!this.engine || this.phase === 'idle') {
+      trace('session', 'special request ignored', { kind, reason: this.phase === 'idle' ? 'not running' : 'no llm' })
+      return false
+    }
     if (this.phase === 'quiet') this.phase = 'recording'
     trace('session', 'special request', { kind })
     this.engine.requestSpecial(kind)
@@ -242,9 +251,25 @@ export class ConversationSession {
   showInfo(items: Suggestion[]): void {
     if (this.phase === 'idle') return
     if (this.phase === 'quiet') this.phase = 'recording'
+    this.hold()
     this.suggestions = items
     this.page = 0
     this.emit()
+  }
+
+  /** Protects an explicit answer from being replaced by regular suggestions for a while. */
+  private hold(): void {
+    this.holdUntil = Date.now() + SPECIAL_HOLD_MS
+    if (this.holdTimer) clearTimeout(this.holdTimer)
+    const generation = this.generation
+    this.holdTimer = setTimeout(() => {
+      this.holdTimer = null
+      if (generation !== this.generation || !this.heldSuggestions) return
+      this.suggestions = this.heldSuggestions
+      this.heldSuggestions = null
+      this.page = 0
+      this.emit()
+    }, SPECIAL_HOLD_MS)
   }
 
   /** Called when the host brought the app back; the mic may have been dropped. */
@@ -281,8 +306,14 @@ export class ConversationSession {
       },
       // Quiet mode hides suggestions; don't pay for requests nobody sees.
       paused: () => this.phase === 'quiet',
-      onSuggestions: suggestions => {
+      onSuggestions: (suggestions, _partial, special) => {
         if (generation !== this.generation) return
+        if (special) this.hold()
+        else if (Date.now() < this.holdUntil) {
+          // Keep the explicitly requested answer on screen; show this later.
+          this.heldSuggestions = suggestions
+          return
+        }
         // Streamed updates only ever grow the list; the page resets to the
         // newest batch.
         this.suggestions = suggestions
@@ -441,6 +472,10 @@ export class ConversationSession {
     this.detectedLanguage = null
     this.names = []
     this.talkShareWarning = null
+    if (this.holdTimer) clearTimeout(this.holdTimer)
+    this.holdTimer = null
+    this.holdUntil = 0
+    this.heldSuggestions = null
   }
 
   private emit(): void {

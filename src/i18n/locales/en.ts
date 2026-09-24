@@ -29,7 +29,7 @@ export const en = {
   'menu.quiet': 'Quiet mode',
   'menu.back': '← Back',
   'menu.topic': 'Change topic',
-  'menu.exitLine': 'Exit line',
+  'menu.exitLine': 'Polite exit line',
   'menu.recap': 'Recap',
   'menu.names': 'Names',
   'extra.talkShare.hint': '• You talk a lot ({pct}%) – ask something',

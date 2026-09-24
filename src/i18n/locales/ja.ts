@@ -24,7 +24,7 @@ export const ja: Messages = {
   'menu.quiet': 'サイレント',
   'menu.back': '← 戻る',
   'menu.topic': '話題を変える',
-  'menu.exitLine': '会話を終える',
+  'menu.exitLine': '切り上げの一言',
   'menu.recap': '要約',
   'menu.names': '名前',
   'extra.talkShare.hint': '• 話しすぎ（{pct}%）– 質問してみて',

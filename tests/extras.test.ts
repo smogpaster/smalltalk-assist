@@ -190,3 +190,60 @@ describe('menu and glasses', () => {
     expect(lineCount(view.body, BODY_INNER_WIDTH)).toBeLessThanOrEqual(BODY_LINES)
   })
 })
+
+describe('explicit requests win over regular suggestions', () => {
+  it('a sentence ending during an exit request neither aborts nor overwrites it', async () => {
+    vi.useFakeTimers()
+    let callbacks!: SttCallbacks
+    const calls: LlmRequest[] = []
+    const llm: LlmProvider = {
+      id: 'slow',
+      model: 'm',
+      testConnection: async () => {},
+      complete: request =>
+        new Promise((resolve, reject) => {
+          calls.push(request)
+          const exit = request.system.includes('end the conversation')
+          const timer = setTimeout(() => resolve(exit ? '{"s":[{"k":"x","t":"Ich muss leider los."}]}' : '{"s":[{"k":"q","t":"Und dann?"}]}'), 2000)
+          request.signal?.addEventListener('abort', () => {
+            clearTimeout(timer)
+            reject(new ProviderError('slow', 'aborted', 'aborted'))
+          })
+        }),
+    }
+    const stt: SttProvider = {
+      id: 'fake',
+      capabilities: { streaming: true, diarization: true, languages: ['de'], autoDetect: false, transports: ['websocket'] },
+      testConnection: async () => {},
+      start: async (_o, cb) => {
+        callbacks = cb
+        return { sendPcm() {}, async close() {} }
+      },
+    }
+    const settings = { ...DEFAULT_SETTINGS, mode: 'live' as const, minIntervalSec: 3 as const }
+    const session = new ConversationSession({
+      audio: { active: true, start: async () => true, stop: async () => {}, rearm: async () => {} },
+      settings: () => settings,
+      createProviders: () => ({ stt, llm, needsAudio: true, language: 'de', diarization: true, selfLabel: 'me' }),
+    })
+    let last!: SessionSnapshot
+    session.subscribe(s => (last = s))
+    await session.start()
+
+    session.requestSpecial('exit')
+    await vi.advanceTimersByTimeAsync(500)
+    callbacks.onResult({ id: '1', text: 'Und dann sind wir noch zum Hafen gelaufen.', isFinal: true, speakerLabel: 'them', startMs: 0, endMs: 2000 })
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(last.suggestions[0]).toEqual({ kind: 'exit', text: 'Ich muss leider los.' })
+
+    // The regular request runs afterwards, but its result waits for the hold.
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(calls).toHaveLength(2)
+    expect(last.suggestions[0].kind).toBe('exit')
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(last.suggestions[0]).toEqual({ kind: 'question', text: 'Und dann?' })
+
+    await session.stop()
+    vi.useRealTimers()
+  })
+})

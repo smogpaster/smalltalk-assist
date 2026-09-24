@@ -49,8 +49,11 @@ export interface EngineOptions {
   /** While true (quiet mode) no requests are sent; see resume(). */
   paused?: () => boolean
   now?: () => number
-  /** `partial` = streamed and still growing; a final call follows. */
-  onSuggestions(suggestions: Suggestion[], partial: boolean): void
+  /**
+   * `partial` = streamed and still growing; a final call follows.
+   * `special` = answer to an explicit request (menu, lull).
+   */
+  onSuggestions(suggestions: Suggestion[], partial: boolean, special?: boolean): void
   onError(error: ProviderError): void
 }
 
@@ -71,6 +74,8 @@ export class SuggestionEngine {
   /** Final transcript characters already covered by a request. */
   private coveredChars = 0
   private lullTimer: ReturnType<typeof setTimeout> | null = null
+  /** An explicit request (menu) is running; regular triggers wait instead of aborting it. */
+  private specialInFlight = false
   private readonly limiter: RateLimiter
   private readonly now: () => number
 
@@ -128,7 +133,7 @@ export class SuggestionEngine {
       context: this.options.context?.(),
     })
     this.limiter.record(this.now())
-    void this.run(request, kind, false)
+    void this.run(request, kind, false, true)
   }
 
   stop(): void {
@@ -174,6 +179,12 @@ export class SuggestionEngine {
 
   private async fire(reason: string, force = false): Promise<void> {
     if (this.stopped) return
+    if (this.specialInFlight) {
+      // Never abort what the wearer explicitly asked for; try again shortly.
+      trace('engine', 'waiting for special request', { reason })
+      this.schedule(1000, reason, force)
+      return
+    }
     if (this.options.paused?.()) {
       this.missedWhilePaused = true
       trace('engine', 'skipped (quiet)', { reason })
@@ -210,13 +221,14 @@ export class SuggestionEngine {
       context: this.options.context?.(),
       features,
     })
-    await this.run(request, reason, features?.names === true)
+    await this.run(request, reason, features?.names === true, false)
   }
 
-  private async run(request: ReturnType<typeof buildSuggestionRequest>, reason: string, wantsNames: boolean): Promise<void> {
+  private async run(request: ReturnType<typeof buildSuggestionRequest>, reason: string, wantsNames: boolean, special: boolean): Promise<void> {
     this.inFlight?.abort()
     const controller = new AbortController()
     this.inFlight = controller
+    if (special) this.specialInFlight = true
     trace('engine', 'request', { reason, provider: this.options.llm.id })
     const started = this.now()
     let streamed = ''
@@ -233,14 +245,14 @@ export class SuggestionEngine {
           if (partial.length > shown) {
             shown = partial.length
             firstAt ??= this.now() - started
-            this.options.onSuggestions(partial, true)
+            this.options.onSuggestions(partial, true, special)
           }
         },
       )
       if (controller.signal.aborted || this.stopped) return
       const suggestions = parseSuggestions(output)
       trace('engine', 'response', { ms: this.now() - started, firstMs: firstAt, chars: output.length, suggestions: suggestions.length })
-      if (suggestions.length > 0) this.options.onSuggestions(suggestions, false)
+      if (suggestions.length > 0) this.options.onSuggestions(suggestions, false, special)
       else trace('engine', 'unparseable answer', { chars: output.length })
       if (wantsNames) {
         const names = parseNames(output)
@@ -252,6 +264,7 @@ export class SuggestionEngine {
       if (error.kind !== 'aborted' && !this.stopped) this.options.onError(error)
     } finally {
       if (this.inFlight === controller) this.inFlight = null
+      if (special) this.specialInFlight = false
     }
   }
 }
