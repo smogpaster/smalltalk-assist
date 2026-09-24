@@ -7,13 +7,16 @@
 import type { KeyValueStore } from '../settings/kv'
 
 const MAX_ENTRIES = 300
-const PERSIST_KEY = 'trace.last'
+const PERSIST_KEY = 'trace.runs'
 const PERSIST_ENTRIES = 150
+const PERSIST_RUNS = 3
+const HEARTBEAT_MS = 10_000
 const PERSIST_INTERVAL_MS = 3000
 const startedAt = Date.now()
 const entries: string[] = []
 const listeners = new Set<() => void>()
-let previousRun: string[] = []
+/** Earlier runs, newest first. Each run starts with a header line. */
+let previousRuns: string[][] = []
 let dirty = false
 
 export function trace(scope: string, message: string, data?: Record<string, string | number | boolean | null | undefined>): void {
@@ -26,9 +29,9 @@ export function trace(scope: string, message: string, data?: Record<string, stri
   for (const listener of listeners) listener()
 }
 
-/** Trace of the previous app run (e.g. before a crash or forced close). */
-export function previousRunEntries(): readonly string[] {
-  return previousRun
+/** Traces of earlier app runs, newest first (e.g. before a crash or forced close). */
+export function previousRunTraces(): readonly (readonly string[])[] {
+  return previousRuns
 }
 
 /**
@@ -40,15 +43,19 @@ export function previousRunEntries(): readonly string[] {
 export async function persistTrace(kv: KeyValueStore): Promise<void> {
   try {
     const raw = await kv.get(PERSIST_KEY)
-    previousRun = raw ? (JSON.parse(raw) as string[]) : []
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+    previousRuns = Array.isArray(parsed) ? (parsed as string[][]).slice(0, PERSIST_RUNS) : []
   } catch {
-    previousRun = []
+    previousRuns = []
   }
-  trace('boot', 'previous run trace', { entries: previousRun.length, last: previousRun.at(-1)?.slice(0, 60) ?? null })
+  trace('boot', 'earlier runs', { count: previousRuns.length })
+  const header = `=== run started ${new Date(startedAt).toISOString()} ===`
   const save = () => {
     if (!dirty) return
     dirty = false
-    kv.set(PERSIST_KEY, JSON.stringify(entries.slice(-PERSIST_ENTRIES))).catch(() => undefined)
+    const current = [header, ...entries.slice(-PERSIST_ENTRIES)]
+    const runs = [current, ...previousRuns].slice(0, PERSIST_RUNS)
+    kv.set(PERSIST_KEY, JSON.stringify(runs)).catch(() => undefined)
   }
   setInterval(save, PERSIST_INTERVAL_MS)
   document.addEventListener('visibilitychange', save)
@@ -75,6 +82,7 @@ export function onTrace(listener: () => void): () => void {
  */
 export function startRuntimeWatch(): void {
   let last = Date.now()
+  setInterval(() => trace('runtime', 'alive', { visibility: document.visibilityState }), HEARTBEAT_MS)
   setInterval(() => {
     const now = Date.now()
     const gap = now - last
