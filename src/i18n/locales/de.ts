@@ -21,6 +21,7 @@ export const de: Messages = {
 
   'menu.toggleSession': 'Start / Stopp',
   'menu.quiet': 'Ruhemodus',
+  'menu.back': '← Zurück',
 
   'ui.status.idle': 'Bereit',
   'ui.status.recording': 'Aufnahme läuft',

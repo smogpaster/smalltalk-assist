@@ -21,6 +21,7 @@ export const ja: Messages = {
 
   'menu.toggleSession': '開始 / 停止',
   'menu.quiet': 'サイレント',
+  'menu.back': '← 戻る',
 
   'ui.status.idle': '待機中',
   'ui.status.recording': '録音中',

@@ -26,6 +26,7 @@ export const en = {
   // Contextual menu (max 32 UTF-8 bytes each)
   'menu.toggleSession': 'Start / Stop',
   'menu.quiet': 'Quiet mode',
+  'menu.back': '← Back',
 
   // Phone UI – common
   'ui.status.idle': 'Ready',
