@@ -58,7 +58,7 @@ Spracherkennungs- und KI-Keys, Profilen und optionalen Zusatzfunktionen.
 
 **Name:** SmallTalk Assist
 
-**Tagline:** Live conversation ideas on your glasses – with your own AI keys.
+**Tagline (as in the portal):** Never get that awful silence again
 
 **Description:**
 SmallTalk Assist makes sure you never run out of things to say. It listens,
