@@ -45,9 +45,12 @@ simulator – hot reload can leave stale event handlers behind.
 ### On the glasses
 
 ```bash
-npm run dev
+npm run dev:device       # dev server without hot reload
 npm run qr               # prints a QR code for http://<your-ip>:5180
 ```
+
+Use `dev:device` for hardware tests: with hot reload every code edit on the
+Mac restarts the app on the phone, which looks exactly like a crash.
 
 Scan it in the Even Realities app (Developer Center / developer mode → scan).
 The app loads on your G2 with hot reload.
