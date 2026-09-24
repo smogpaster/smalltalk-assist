@@ -1,0 +1,92 @@
+/**
+ * Canonical message catalog. Other locales must provide every key
+ * (enforced by the `Messages` type). Placeholders use {name}.
+ * Glasses strings must only use glyphs from the firmware font.
+ */
+export const en = {
+  'app.title': 'SmallTalk Assist',
+
+  // Glasses
+  'glasses.idle': 'Tap to start a conversation.\nDouble-tap: exit',
+  'glasses.listening': 'Listening…',
+  'glasses.quiet': 'Quiet mode – long-press to show suggestions',
+  'glasses.rec': '● REC',
+  'glasses.paused': '○ Quiet',
+  'glasses.ready': '○ Ready',
+  'glasses.mock': 'DEMO',
+  'glasses.error': '! {message}',
+  'glasses.kind.question': '?',
+  'glasses.kind.reply': '▶',
+  'glasses.kind.topic': '◆',
+  'glasses.kind.exit': '◇',
+  'glasses.kind.recall': '↑',
+  'glasses.kind.term': 'i',
+  'glasses.kind.hint': '•',
+
+  // Phone UI – common
+  'ui.status.idle': 'Ready',
+  'ui.status.recording': 'Recording',
+  'ui.status.quiet': 'Quiet mode',
+  'ui.status.starting': 'Starting…',
+  'ui.status.noGlasses': 'Preview – not running inside the Even app',
+  'ui.start': 'Start conversation',
+  'ui.stop': 'Stop',
+  'ui.mode.mock': 'Demo mode (no keys, scripted conversation)',
+  'ui.mode.live': 'Live mode',
+  'ui.transcript': 'Transcript',
+  'ui.transcript.empty': 'Nothing yet. Transcripts are kept in memory only and deleted when you stop.',
+  'ui.suggestions': 'Suggestions',
+  'ui.suggestions.empty': 'Suggestions appear here and on the glasses.',
+  'ui.speaker.self': 'Me',
+  'ui.speaker.other': 'Other',
+  'ui.speaker.unknown': '?',
+  'ui.kind.question': 'Question',
+  'ui.kind.reply': 'Reply idea',
+  'ui.kind.topic': 'New topic',
+  'ui.kind.exit': 'Exit line',
+  'ui.kind.recall': 'Callback',
+  'ui.kind.term': 'Term',
+  'ui.kind.hint': 'Hint',
+  'ui.nav.home': 'Conversation',
+  'ui.nav.settings': 'Settings',
+  'ui.nav.diagnostics': 'Diagnostics',
+  'ui.language': 'App language',
+  'ui.language.auto': 'System default',
+  'ui.demoLanguage': 'Demo conversation language',
+  'ui.mode': 'Mode',
+  'ui.perPage': 'Suggestions visible at once on the glasses',
+  'ui.glassesPreview': 'Glasses preview',
+
+  // Errors (by ProviderErrorKind)
+  'error.auth': 'The API key was rejected.',
+  'error.rate_limit': 'Rate limit reached – please wait a moment.',
+  'error.quota': 'No credit left with the provider.',
+  'error.network': 'No connection to the provider.',
+  'error.timeout': 'The provider did not answer in time.',
+  'error.aborted': 'Cancelled.',
+  'error.bad_request': 'The provider rejected the request (check the model name).',
+  'error.server': 'The provider has a server problem.',
+  'error.unsupported': 'Not supported by this provider.',
+  'error.unknown': 'Unexpected error.',
+
+  // Diagnostics
+  'diag.intro': 'Hardware checks for this phone and your glasses. No API key is needed; nothing is stored.',
+  'diag.ws.title': 'WebSocket check',
+  'diag.ws.desc': 'Opens a connection to the Soniox speech server and sends a dummy login. An "invalid key" answer means WebSockets work in this app.',
+  'diag.ws.run': 'Run WebSocket check',
+  'diag.fetch.title': 'HTTPS check',
+  'diag.fetch.run': 'Run HTTPS check',
+  'diag.audio.title': 'Microphone check',
+  'diag.audio.desc': 'Counts audio frames and shows how the glasses classify the speaker (self/other). Speak, then let someone else speak.',
+  'diag.audio.start': 'Start microphone',
+  'diag.audio.stop': 'Stop microphone',
+  'diag.glyph.title': 'Glyph check',
+  'diag.glyph.desc': 'Shows test characters on the glasses. Compare with the list here.',
+  'diag.glyph.run': 'Show on glasses',
+  'diag.copy': 'Copy report',
+  'diag.copied': 'Copied',
+  'diag.pending': 'Running…',
+} as const
+
+export type MessageKey = keyof typeof en
+export type Messages = Record<MessageKey, string>

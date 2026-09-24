@@ -1,0 +1,30 @@
+{
+  "package_id": "com.smogpaster.smallbig",
+  "edition": "202601",
+  "name": "SmallTalk Assist",
+  "version": "0.1.0",
+  "min_app_version": "2.2.10",
+  "min_sdk_version": "0.0.16",
+  "entrypoint": "index.html",
+  "permissions": [
+    {
+      "name": "g2-microphone",
+      "desc": "Listens to the conversation while a session is running so it can be transcribed and short suggestions can be shown. Audio is streamed to the speech provider you chose and never stored."
+    },
+    {
+      "name": "phone-microphone",
+      "desc": "Optional alternative to the glasses microphone, selectable in settings. Audio is streamed to the speech provider you chose and never stored."
+    },
+    {
+      "name": "network",
+      "desc": "Sends audio and transcript text only to the speech and AI providers you selected, using your own API keys. No other servers, no analytics.",
+      "whitelist": [
+        "https://api.soniox.com",
+        "wss://stt-rt.soniox.com",
+        "https://api.deepgram.com",
+        "wss://api.deepgram.com"
+      ]
+    }
+  ],
+  "supported_languages": ["de", "en", "ja"]
+}
