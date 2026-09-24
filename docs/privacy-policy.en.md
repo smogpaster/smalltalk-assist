@@ -1,15 +1,16 @@
 # Privacy Policy – SmallTalk Assist
 
-> **Draft.** Fill in the placeholders in brackets and have the policy
-> reviewed before publishing.
+> Ideally have this reviewed before publishing (see section 6).
 
-Last updated: [date]
+Last updated: 24 September 2026
 
 ## 1. Controller
 
 Smogpaster
-[Address]
-Email: [contact email]
+Pfleghofstr. 6
+72070 Tübingen
+Germany
+Email: peter@greza.de
 
 ## 2. What the app does
 
@@ -71,13 +72,13 @@ note is not legal advice.
 
 Processing on your device and the transfer to the providers you selected
 happen at your request to use the feature (Art. 6(1)(b) GDPR, or (a) where
-you consent). [have reviewed]
+you consent).
 
 ## 7. Your rights
 
 As the publisher receives no personal data, requests about access, deletion
 or objection regarding provider processing go to the respective provider.
-You can delete local data yourself (see 3.2). Questions: [contact email]. You
+You can delete local data yourself (see 3.2). Questions: peter@greza.de. You
 have the right to lodge a complaint with a data protection authority.
 
 ## 8. Changes

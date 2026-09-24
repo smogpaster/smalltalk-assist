@@ -1,15 +1,16 @@
 # Datenschutzerklärung – SmallTalk Assist
 
-> **Entwurf.** Vor der Veröffentlichung bitte die Platzhalter in eckigen
-> Klammern ausfüllen und die Erklärung rechtlich prüfen lassen.
+> Vor der Veröffentlichung am besten rechtlich prüfen lassen (siehe Abschnitt 6).
 
-Stand: [Datum]
+Stand: 24.09.2026
 
 ## 1. Verantwortlicher
 
 Smogpaster
-[Anschrift]
-E-Mail: [Kontakt-E-Mail]
+Pfleghofstr. 6
+72070 Tübingen
+Deutschland
+E-Mail: peter@greza.de
 
 ## 2. Worum es geht
 
@@ -73,14 +74,14 @@ Deutschland z. B. § 201 StGB). Dieser Hinweis ist keine Rechtsberatung.
 
 Die Verarbeitung auf deinem Gerät und die Übermittlung an die von dir
 gewählten Anbieter erfolgen auf deine Veranlassung zur Nutzung der Funktion
-(Art. 6 Abs. 1 lit. b DSGVO bzw. lit. a, soweit du einwilligst). [rechtlich prüfen]
+(Art. 6 Abs. 1 lit. b DSGVO bzw. lit. a, soweit du einwilligst).
 
 ## 7. Deine Rechte
 
 Da der Anbieter von SmallTalk Assist keine personenbezogenen Daten erhält,
 richten sich Auskunfts-, Lösch- und Widerspruchsrechte bezüglich der
 Anbieter-Verarbeitung an den jeweiligen Spracherkennungs- bzw. KI-Anbieter.
-Lokale Daten kannst du selbst löschen (siehe 3.2). Bei Fragen: [Kontakt-E-Mail].
+Lokale Daten kannst du selbst löschen (siehe 3.2). Bei Fragen: peter@greza.de.
 Du hast das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde.
 
 ## 8. Änderungen
