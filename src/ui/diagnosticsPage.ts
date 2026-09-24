@@ -1,4 +1,5 @@
 import { GLYPH_SAMPLES, checkFetch, checkWebSocket, countFrameStats, type CheckResult } from '../diag/checks'
+import { clearTrace, traceEntries } from '../diag/trace'
 import type { UiContext } from './context'
 import { el } from './dom'
 
@@ -64,12 +65,7 @@ export function renderDiagnostics(ctx: UiContext, rerender: () => void): HTMLEle
   }
 
   const copyReport = async () => {
-    try {
-      await navigator.clipboard.writeText(report(ctx))
-      state.copied = true
-    } catch {
-      state.copied = false
-    }
+    state.copied = await copyText(report(ctx))
     rerender()
   }
 
@@ -119,9 +115,46 @@ export function renderDiagnostics(ctx: UiContext, rerender: () => void): HTMLEle
         state.glyphsShown ? '✕' : t('diag.glyph.run')),
     ),
 
+    el('div', { class: 'card' },
+      el('p', {}, el('strong', {}, t('diag.trace.title'))),
+      el('p', { class: 'dim' }, t('diag.trace.desc')),
+      el('button', { class: 'btn secondary', on: { click: () => { clearTrace(); rerender() } } }, t('diag.trace.clear')),
+      el('div', { class: 'report' }, traceEntries().slice(-60).join('\n') || '-'),
+    ),
+
     el('button', { class: 'btn', on: { click: () => void copyReport() } }, state.copied ? t('diag.copied') : t('diag.copy')),
-    el('div', { class: 'report' }, report(ctx)),
   )
+}
+
+/**
+ * navigator.clipboard only exists in secure contexts; the dev build is served
+ * over plain http on the LAN, so fall back to a hidden textarea + execCommand.
+ */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    /* fall through */
+  }
+  const area = document.createElement('textarea')
+  area.value = text
+  area.setAttribute('readonly', '')
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  document.body.append(area)
+  area.select()
+  area.setSelectionRange(0, text.length)
+  let ok = false
+  try {
+    ok = document.execCommand('copy')
+  } catch {
+    ok = false
+  }
+  area.remove()
+  return ok
 }
 
 function resultView(result: CheckResult | 'pending' | null, pendingText: string): HTMLElement | null {
@@ -145,5 +178,7 @@ function report(ctx: UiContext): string {
     `websocket: ${fmt(state.ws)}`,
     `fetch: ${fmt(state.fetch)}`,
     `mic(${ctx.settings.get().micSource}): frames=${m.frames} bytes/frame=${m.frames ? Math.round(m.bytes / m.frames) : 0} roles=${JSON.stringify(m.roles)} directions=${[...m.directions].slice(0, 8).join(',') || 'null'}`,
+    `--- trace ---`,
+    ...traceEntries(),
   ].join('\n')
 }

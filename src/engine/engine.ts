@@ -1,5 +1,5 @@
 import { toProviderError, type ProviderError } from '../core/errors'
-import { debug } from '../core/log'
+import { trace } from '../diag/trace'
 import type { Suggestion, TranscriptSegment } from '../core/types'
 import type { LlmProvider } from '../llm/types'
 import { parseSuggestions } from './format'
@@ -44,7 +44,7 @@ export class SuggestionEngine {
     }
     if (segment.speaker === 'self') return
     this.clearDebounce()
-    debug('engine', 'trigger scheduled')
+    trace('engine', 'trigger scheduled')
     this.debounceTimer = setTimeout(() => {
       this.debounceTimer = null
       void this.request()
@@ -71,7 +71,7 @@ export class SuggestionEngine {
     const controller = new AbortController()
     this.inFlight = controller
 
-    debug('engine', 'request', { segments: segments.length })
+    trace('engine', 'request', { segments: segments.length })
     const started = Date.now()
     const request = buildSuggestionRequest({
       segments,
@@ -88,11 +88,11 @@ export class SuggestionEngine {
       })
       if (controller.signal.aborted || this.stopped) return
       const suggestions = parseSuggestions(output)
-      debug('engine', 'response', { ms: Date.now() - started, chars: output.length, suggestions: suggestions.length })
+      trace('engine', 'response', { ms: Date.now() - started, chars: output.length, suggestions: suggestions.length })
       if (suggestions.length > 0) this.options.onSuggestions(suggestions)
     } catch (err) {
       const error = toProviderError(this.options.llm.id, err)
-      debug('engine', 'request failed', { kind: error.kind })
+      trace('engine', 'request failed', { kind: error.kind })
       if (error.kind !== 'aborted' && !this.stopped) this.options.onError(error)
     } finally {
       if (this.inFlight === controller) this.inFlight = null

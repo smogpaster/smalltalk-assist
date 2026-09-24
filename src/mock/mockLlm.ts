@@ -5,13 +5,17 @@ import type { LlmProvider, LlmRequest } from '../llm/types'
 import { DEMO_SCRIPTS } from './scripts'
 
 const CHUNK_SIZE = 12
-const CHUNK_DELAY_MS = 40
-const FIRST_TOKEN_MS = 350
+/** Simulated time until the complete answer is there. */
+const LATENCY_MS = 900
 
 /**
  * Answers with the canned suggestions of the most recent scripted line that
- * appears in the prompt, streamed in small chunks like a real provider – so
+ * appears in the prompt, delivered in small chunks like a real stream – so
  * the demo exercises the same parsing, abort and rendering paths.
+ *
+ * One single wait instead of a timer per chunk: while the WebView is hidden
+ * the host throttles timers to ~1 s, and a chain of small delays would turn
+ * a 1 s answer into 20 s.
  */
 export class MockLlmProvider implements LlmProvider {
   readonly id = 'mock'
@@ -25,15 +29,9 @@ export class MockLlmProvider implements LlmProvider {
     const prompt = request.messages.map(m => m.content).join('\n')
     const output = encodeSuggestions(this.pick(prompt))
 
-    await delay(FIRST_TOKEN_MS, request.signal)
-    let emitted = ''
-    for (let i = 0; i < output.length; i += CHUNK_SIZE) {
-      const chunk = output.slice(i, i + CHUNK_SIZE)
-      emitted += chunk
-      onDelta?.(chunk)
-      await delay(CHUNK_DELAY_MS, request.signal)
-    }
-    return emitted
+    await delay(LATENCY_MS, request.signal)
+    for (let i = 0; i < output.length; i += CHUNK_SIZE) onDelta?.(output.slice(i, i + CHUNK_SIZE))
+    return output
   }
 
   private pick(prompt: string): Suggestion[] {

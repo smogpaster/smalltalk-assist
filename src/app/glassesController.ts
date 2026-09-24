@@ -1,6 +1,7 @@
 import type { EvenAppBridge } from '@evenrealities/even_hub_sdk'
 import type { AppEvent } from '../bridge/events'
 import type { EventHub } from '../bridge/hub'
+import { trace } from '../diag/trace'
 import type { BridgeQueue } from '../bridge/queue'
 import { buildGlassesView, type GlassesView } from '../display/layout'
 import type { GlassesRenderer } from '../display/renderer'
@@ -70,8 +71,8 @@ export class GlassesController {
     const session = this.deps.session
     switch (event.type) {
       case 'tap':
-        if (session.isActive) await session.stop()
-        else await session.start()
+        if (session.isActive) await session.stop(`tap:${event.source}`)
+        else await session.start(`tap:${event.source}`)
         return
       case 'swipeUp':
         session.movePage(-1)
@@ -84,15 +85,18 @@ export class GlassesController {
         return
       case 'doubleTap':
         this.exitDialogOpen = true
+        trace('glasses', 'exit dialog requested')
         await this.deps.queue.run(() => this.deps.bridge.shutDownPageContainer(1))
         return
       case 'foregroundEnter':
+        trace('glasses', 'foreground enter', { dialog: this.exitDialogOpen })
         // Either the exit dialog appeared or we are back from background.
         // In both cases the host may have cleared our page: redraw it.
         await this.deps.renderer.redraw(this.view())
         if (!this.exitDialogOpen) await session.resume()
         return
       case 'foregroundExit':
+        trace('glasses', 'foreground exit', { dialog: this.exitDialogOpen })
         if (this.exitDialogOpen) {
           // User cancelled the exit dialog – keep running.
           this.exitDialogOpen = false
@@ -101,7 +105,7 @@ export class GlassesController {
         return
       case 'exit':
         this.exitDialogOpen = false
-        await session.stop()
+        await session.stop(event.abnormal ? 'abnormal-exit' : 'system-exit')
         await this.deps.onExit()
         return
       case 'longPressRelease':

@@ -1,4 +1,5 @@
 import type { SessionSnapshot } from '../app/session'
+import { onTrace } from '../diag/trace'
 import type { MessageKey } from '../i18n'
 import type { UiContext } from './context'
 import { renderDiagnostics } from './diagnosticsPage'
@@ -53,6 +54,9 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
     schedule()
   })
   ctx.settings.subscribe(schedule)
+  onTrace(() => {
+    if (tab === 'diagnostics') schedule()
+  })
   render()
   return { refresh: schedule }
 }

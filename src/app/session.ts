@@ -1,5 +1,6 @@
 import type { AudioInput } from '../audio/input'
 import { ProviderError, toProviderError } from '../core/errors'
+import { trace } from '../diag/trace'
 import type { Suggestion, TranscriptSegment } from '../core/types'
 import { clampPage } from '../display/layout'
 import { SuggestionEngine } from '../engine/engine'
@@ -85,7 +86,9 @@ export class ConversationSession {
     return this.phase !== 'idle'
   }
 
-  async start(): Promise<void> {
+  /** `reason` is only used for the diagnostics trace (e.g. 'tap', 'ui'). */
+  async start(reason = 'ui'): Promise<void> {
+    trace('session', 'start', { reason, phase: this.phase })
     if (this.phase !== 'idle') return
     const generation = ++this.generation
     const settings = this.deps.settings()
@@ -125,6 +128,7 @@ export class ConversationSession {
           },
           onError: error => {
             if (generation !== this.generation) return
+            trace('session', 'stt error', { kind: error.kind })
             this.error = error
             this.emit()
           },
@@ -144,6 +148,7 @@ export class ConversationSession {
     } catch (err) {
       if (generation !== this.generation) return
       const error = toProviderError('session', err)
+      trace('session', 'start failed', { kind: error.kind })
       await this.teardown()
       this.error = error
       this.phase = 'idle'
@@ -151,7 +156,8 @@ export class ConversationSession {
     }
   }
 
-  async stop(): Promise<void> {
+  async stop(reason = 'ui'): Promise<void> {
+    trace('session', 'stop', { reason, phase: this.phase })
     if (this.phase === 'idle') return
     this.generation++
     await this.teardown()
@@ -161,6 +167,7 @@ export class ConversationSession {
   }
 
   toggleQuiet(): void {
+    trace('session', 'toggle quiet', { phase: this.phase })
     if (this.phase === 'recording') this.phase = 'quiet'
     else if (this.phase === 'quiet') this.phase = 'recording'
     else return
@@ -192,6 +199,7 @@ export class ConversationSession {
       endMs: result.endMs,
     }
     this.transcript.upsert(segment)
+    if (segment.isFinal) trace('session', 'utterance', { speaker: segment.speaker, chars: segment.text.length })
     if (this.phase === 'recording') this.engine?.onSegment(segment)
     this.emit()
   }

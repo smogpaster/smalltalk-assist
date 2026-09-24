@@ -3,6 +3,7 @@ import { createProviders } from './app/providers'
 import { ConversationSession } from './app/session'
 import { BridgeAudioInput } from './audio/input'
 import { connectBridge } from './bridge/connect'
+import { startRuntimeWatch, trace } from './diag/trace'
 import { EventHub } from './bridge/hub'
 import { attachPreviewKeys, previewRenderBridge } from './bridge/preview'
 import { BridgeQueue } from './bridge/queue'
@@ -15,9 +16,11 @@ import { mountUi } from './ui/app'
 
 async function bootstrap() {
   const root = document.querySelector<HTMLDivElement>('#app')!
+  startRuntimeWatch()
   const queue = new BridgeQueue()
   const bridge = await connectBridge()
   const inEvenApp = bridge !== null
+  trace('boot', 'bridge', { inEvenApp })
 
   const settings = new SettingsStore(bridge ? new BridgeKeyValueStore(bridge, queue) : new LocalKeyValueStore())
   await settings.load()
@@ -52,7 +55,7 @@ async function bootstrap() {
 
   // The glasses page must exist before the glasses mic can be opened.
   const pageOk = await renderer.init(controller.view())
-  if (!pageOk) console.error('[glasses] could not create the startup page')
+  trace('boot', 'glasses page', { ok: pageOk })
   controller.start()
 
   const ui = mountUi(root, {
