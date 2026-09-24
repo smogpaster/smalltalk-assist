@@ -93,6 +93,28 @@ export async function checkFetch(timeoutMs = 10_000): Promise<CheckResult> {
   }
 }
 
+/**
+ * Same endpoint, but with an Authorization header (dummy key): needs a CORS
+ * preflight. Expected answer 401. A failure here but not in checkFetch means
+ * the WebView blocks requests with custom headers.
+ */
+export async function checkFetchWithAuth(timeoutMs = 10_000): Promise<CheckResult> {
+  const started = performance.now()
+  const details: string[] = []
+  try {
+    const response = await fetch(SONIOX_REST, {
+      headers: { Authorization: 'Bearer invalid-diagnostic-key' },
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    details.push(`status ${response.status}`)
+    const ok = response.status === 401
+    return { ok, summary: ok ? 'Requests with auth header work' : `unexpected status ${response.status}`, details, durationMs: Math.round(performance.now() - started) }
+  } catch (err) {
+    details.push(`${(err as Error).name}: ${(err as Error).message}`)
+    return { ok: false, summary: 'request with auth header blocked', details, durationMs: Math.round(performance.now() - started) }
+  }
+}
+
 /** Characters to verify on the glasses; `expected` comes from the firmware font metrics. */
 export const GLYPH_SAMPLES = [
   'Äöüß „Grüße" – … é ñ',

@@ -14,7 +14,8 @@ export class KeyStore {
   async load(providerIds: readonly string[]): Promise<void> {
     for (const id of providerIds) {
       try {
-        const value = await this.kv.get(storageKey(id))
+        // Clean on load too: keys saved before cleaning existed may contain invisible characters.
+        const value = cleanKey((await this.kv.get(storageKey(id))) ?? '')
         if (value) this.cache.set(id, value)
       } catch {
         /* treat as missing */
@@ -31,7 +32,7 @@ export class KeyStore {
   }
 
   async set(providerId: string, key: string): Promise<void> {
-    const trimmed = key.trim()
+    const trimmed = cleanKey(key)
     if (!trimmed) return this.remove(providerId)
     this.cache.set(providerId, trimmed)
     await this.kv.set(storageKey(providerId), trimmed)
@@ -41,6 +42,15 @@ export class KeyStore {
     this.cache.delete(providerId)
     await this.kv.remove(storageKey(providerId))
   }
+}
+
+/**
+ * API keys are printable ASCII. Pasting on iOS can add invisible characters
+ * (zero-width or non-breaking spaces, line breaks); fetch() then refuses the
+ * header value and it looks like a network error. Strip everything else.
+ */
+export function cleanKey(key: string): string {
+  return key.replace(/[^\x21-\x7E]/g, '')
 }
 
 function storageKey(providerId: string): string {

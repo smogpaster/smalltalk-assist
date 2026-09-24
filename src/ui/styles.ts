@@ -19,7 +19,7 @@ const css = `
 html, body { margin: 0; background: var(--bg); color: var(--text);
   font: 16px/1.45 "FK Grotesk Neue", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Source Han Sans", system-ui, sans-serif;
   letter-spacing: -0.01em; -webkit-text-size-adjust: 100%; touch-action: manipulation; overscroll-behavior: none; }
-#app { max-width: 640px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 20px calc(88px + env(safe-area-inset-bottom)); overflow-x: hidden; }
+#app { max-width: 640px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 20px calc(140px + env(safe-area-inset-bottom)); overflow-x: hidden; }
 h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
 h2 { font-size: 13px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); margin: 24px 0 8px; }
 p { margin: 0 0 8px; }

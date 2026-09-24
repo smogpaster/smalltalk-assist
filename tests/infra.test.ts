@@ -133,3 +133,15 @@ describe('i18n', () => {
     }
   })
 })
+
+describe('KeyStore', () => {
+  it('strips invisible characters that iOS adds when pasting', async () => {
+    const { KeyStore, cleanKey } = await import('../src/settings/keys')
+    expect(cleanKey(' sk​-abc 123\n')).toBe('sk-abc123')
+    const store = new KeyStore(new MemoryKeyValueStore())
+    await store.set('soniox', '⁠key-1\r\n')
+    expect(store.get('soniox')).toBe('key-1')
+    await store.set('soniox', ' ​ ')
+    expect(store.get('soniox')).toBeNull()
+  })
+})

@@ -22,6 +22,7 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
   let tab: Tab = 'home'
   let snapshot: SessionSnapshot = ctx.session.snapshot()
   let scheduled = false
+  let tabChanged = false
 
   const render = () => {
     scheduled = false
@@ -34,10 +35,14 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
       'nav',
       { class: 'tabs' },
       ...TABS.map(item =>
-        el('button', { class: item.id === tab ? 'active' : '', on: { click: () => { tab = item.id; schedule() } } }, t(item.label)),
+        el('button', { class: item.id === tab ? 'active' : '', on: { click: () => { tabChanged = tab !== item.id; tab = item.id; schedule() } } }, t(item.label)),
       ),
     )
+    // Re-rendering replaces the DOM; keep the scroll position so buttons don't jump away.
+    const scroll = window.scrollY
     root.replaceChildren(el('header', { class: 'topbar' }, el('h1', {}, t('app.title')), status), page, tabs)
+    if (!tabChanged) window.scrollTo(0, scroll)
+    tabChanged = false
   }
 
   // Coalesce bursts (interim transcripts arrive every ~200 ms). Deliberately a

@@ -4,6 +4,7 @@ import { UI_LANGUAGES, type MessageKey } from '../i18n'
 import { maskKey } from '../settings/keys'
 import { CONVERSATION_LANGUAGES, LANGUAGE_NATIVE_NAMES, type ConversationLanguage } from '../stt/languages'
 import { STT_PROVIDERS, sttProviderInfo, type SttProviderId } from '../stt/registry'
+import { trace } from '../diag/trace'
 import type { UiContext } from './context'
 import { el, selectField } from './dom'
 
@@ -138,7 +139,10 @@ function providerDetails(ctx: UiContext, id: SttProviderId, rerender: () => void
       await info.create(key, s.sttModels[id]).testConnection()
       state.test[id] = 'ok'
     } catch (err) {
-      state.test[id] = toProviderError(id, err)
+      const error = toProviderError(id, err)
+      state.test[id] = error
+      // Error messages come from fetch/WebKit or the provider – never the key.
+      trace('settings', 'connection test failed', { provider: id, kind: error.kind, status: error.status ?? null, message: error.message.slice(0, 120) })
     }
     rerender()
   }
@@ -167,7 +171,10 @@ function providerDetails(ctx: UiContext, id: SttProviderId, rerender: () => void
     test && test !== 'pending'
       ? test === 'ok'
         ? el('p', { class: 'ok' }, `✔ ${t('settings.key.ok')}`)
-        : el('p', { class: 'error' }, `✘ ${t(`error.${test.kind}` as MessageKey)}`, test.status ? ` (HTTP ${test.status})` : '')
+        : el('div', {},
+            el('p', { class: 'error' }, `✘ ${t(`error.${test.kind}` as MessageKey)}`, test.status ? ` (HTTP ${test.status})` : ''),
+            el('p', { class: 'dim' }, test.message.slice(0, 160)),
+          )
       : null,
     caps.diarization
       ? toggleField(t('settings.diarization'), s.diarization, value => ctx.settings.update({ diarization: value }), locked)

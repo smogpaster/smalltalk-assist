@@ -1,4 +1,4 @@
-import { GLYPH_SAMPLES, checkFetch, checkWebSocket, countFrameStats, type CheckResult } from '../diag/checks'
+import { GLYPH_SAMPLES, checkFetch, checkFetchWithAuth, checkWebSocket, countFrameStats, type CheckResult } from '../diag/checks'
 import { clearTrace, previousRunTraces, traceEntries } from '../diag/trace'
 import type { UiContext } from './context'
 import { el } from './dom'
@@ -17,6 +17,7 @@ interface MicStats {
 const state = {
   ws: null as CheckResult | 'pending' | null,
   fetch: null as CheckResult | 'pending' | null,
+  fetchAuth: null as CheckResult | 'pending' | null,
   mic: { running: false, frames: 0, bytes: 0, roles: {}, directions: new Set<number>(), rms: 0, startedAt: 0 } as MicStats,
   glyphsShown: false,
   copied: false,
@@ -27,8 +28,13 @@ export function renderDiagnostics(ctx: UiContext, rerender: () => void): HTMLEle
 
   const run = async (key: 'ws' | 'fetch') => {
     state[key] = 'pending'
+    if (key === 'fetch') state.fetchAuth = 'pending'
     rerender()
-    state[key] = key === 'ws' ? await checkWebSocket() : await checkFetch()
+    if (key === 'ws') state.ws = await checkWebSocket()
+    else {
+      state.fetch = await checkFetch()
+      state.fetchAuth = await checkFetchWithAuth()
+    }
     rerender()
   }
 
@@ -89,6 +95,7 @@ export function renderDiagnostics(ctx: UiContext, rerender: () => void): HTMLEle
       el('p', {}, el('strong', {}, t('diag.fetch.title'))),
       el('button', { class: 'btn secondary', on: { click: () => void run('fetch') } }, t('diag.fetch.run')),
       resultView(state.fetch, t('diag.pending')),
+      resultView(state.fetchAuth, t('diag.pending')),
     ),
 
     el('div', { class: 'card' },
@@ -177,6 +184,7 @@ function report(ctx: UiContext): string {
     `evenApp: ${ctx.inEvenApp}`,
     `websocket: ${fmt(state.ws)}`,
     `fetch: ${fmt(state.fetch)}`,
+    `fetch+auth: ${fmt(state.fetchAuth)}`,
     `mic(${ctx.settings.get().micSource}): frames=${m.frames} bytes/frame=${m.frames ? Math.round(m.bytes / m.frames) : 0} roles=${JSON.stringify(m.roles)} directions=${[...m.directions].slice(0, 8).join(',') || 'null'}`,
     `--- trace (this run) ---`,
     ...traceEntries(),
