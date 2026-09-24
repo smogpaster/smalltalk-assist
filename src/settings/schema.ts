@@ -2,6 +2,7 @@ import type { LanguageCode } from '../core/types'
 import { isUiLanguage, type UiLanguage } from '../i18n'
 import { isConversationLanguage, type ConversationLanguage } from '../stt/languages'
 import { isSttProviderId, type SttProviderId } from '../stt/registry'
+import { isLlmProviderId, type LlmProviderId } from '../llm/registry'
 
 export const SETTINGS_VERSION = 1
 
@@ -30,6 +31,17 @@ export interface Settings {
   sttModels: Partial<Record<SttProviderId, string>>
   /** Ask the STT provider for speaker labels (if supported). */
   diarization: boolean
+  llmProvider: LlmProviderId | null
+  /** Per-provider model; empty = provider default (compatible presets need one). */
+  llmModels: Partial<Record<LlmProviderId, string>>
+  /** Language of the suggestions: same as the conversation, or a fixed one. */
+  suggestionLanguage: 'same' | ConversationLanguage
+  /** Pause after the other person's sentence before asking for suggestions. */
+  pauseMs: 500 | 900 | 1500 | 2500
+  /** Minimum time between two LLM requests. */
+  minIntervalSec: 3 | 6 | 10 | 20
+  /** Maximum LLM requests per minute. */
+  maxPerMinute: 3 | 6 | 10
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -44,6 +56,12 @@ export const DEFAULT_SETTINGS: Settings = {
   sttProvider: null,
   sttModels: {},
   diarization: true,
+  llmProvider: null,
+  llmModels: {},
+  suggestionLanguage: 'same',
+  pauseMs: 900,
+  minIntervalSec: 6,
+  maxPerMinute: 6,
 }
 
 /**
@@ -66,16 +84,23 @@ export function migrateSettings(raw: unknown): Settings {
     onboardingDone: pick(r.onboardingDone, (v): v is boolean => typeof v === 'boolean', DEFAULT_SETTINGS.onboardingDone),
     conversationLanguage: pick(r.conversationLanguage, (v): v is ConversationLanguage | 'auto' => v === 'auto' || isConversationLanguage(v), DEFAULT_SETTINGS.conversationLanguage),
     sttProvider: pick(r.sttProvider, (v): v is SttProviderId | null => v === null || isSttProviderId(v), DEFAULT_SETTINGS.sttProvider),
-    sttModels: sanitizeModels(r.sttModels),
+    sttModels: sanitizeMap(r.sttModels, isSttProviderId),
     diarization: pick(r.diarization, (v): v is boolean => typeof v === 'boolean', DEFAULT_SETTINGS.diarization),
+    llmProvider: pick(r.llmProvider, (v): v is LlmProviderId | null => v === null || isLlmProviderId(v), DEFAULT_SETTINGS.llmProvider),
+    llmModels: sanitizeMap(r.llmModels, isLlmProviderId),
+    suggestionLanguage: pick(r.suggestionLanguage, (v): v is Settings['suggestionLanguage'] => v === 'same' || isConversationLanguage(v), DEFAULT_SETTINGS.suggestionLanguage),
+    pauseMs: pick(r.pauseMs, (v): v is Settings['pauseMs'] => [500, 900, 1500, 2500].includes(v as number), DEFAULT_SETTINGS.pauseMs),
+    minIntervalSec: pick(r.minIntervalSec, (v): v is Settings['minIntervalSec'] => [3, 6, 10, 20].includes(v as number), DEFAULT_SETTINGS.minIntervalSec),
+    maxPerMinute: pick(r.maxPerMinute, (v): v is Settings['maxPerMinute'] => [3, 6, 10].includes(v as number), DEFAULT_SETTINGS.maxPerMinute),
   }
 }
 
-function sanitizeModels(raw: unknown): Settings['sttModels'] {
+/** Per-provider model names: known ids only, trimmed, non-empty, bounded. */
+function sanitizeMap<K extends string>(raw: unknown, isKey: (v: unknown) => v is K): Partial<Record<K, string>> {
   if (!raw || typeof raw !== 'object') return {}
-  const out: Settings['sttModels'] = {}
+  const out: Partial<Record<K, string>> = {}
   for (const [id, model] of Object.entries(raw as Record<string, unknown>)) {
-    if (isSttProviderId(id) && typeof model === 'string' && model.trim() && model.length <= 100) out[id] = model.trim()
+    if (isKey(id) && typeof model === 'string' && model.trim() && model.length <= 100) out[id] = model.trim()
   }
   return out
 }

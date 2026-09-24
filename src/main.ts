@@ -13,6 +13,7 @@ import { KeyStore } from './settings/keys'
 import { BridgeKeyValueStore, LocalKeyValueStore } from './settings/kv'
 import type { Settings } from './settings/schema'
 import { SettingsStore } from './settings/store'
+import { LLM_PROVIDERS } from './llm/registry'
 import { STT_PROVIDERS } from './stt/registry'
 import { mountUi } from './ui/app'
 
@@ -30,7 +31,7 @@ async function bootstrap() {
   await settings.load()
   await persistTrace(kv)
   const keys = new KeyStore(kv)
-  await keys.load(STT_PROVIDERS.map(p => p.id))
+  await keys.load([...STT_PROVIDERS.map(p => p.id), ...LLM_PROVIDERS.map(p => p.id)])
 
   let translate: Translate = translatorFor(settings.get())
   let uiLanguage = languageFor(settings.get())

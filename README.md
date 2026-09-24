@@ -5,10 +5,10 @@ conversation, transcribes it and shows short small-talk suggestions (questions
 and reply ideas) on the glasses. Bring your own API keys; transcripts and
 suggestions live only in memory.
 
-> Status: **milestone 3 (part 1)** – demo mode, glasses display, gestures,
-> contextual menu, diagnostics, live speech-to-text (Soniox, Deepgram,
-> Speechmatics, Gladia). LLM suggestions for live mode follow in milestone 4;
-> until then live mode shows the transcript on the glasses.
+> Status: **milestone 4** – demo mode, glasses display, gestures, contextual
+> menu, diagnostics, live speech-to-text (Soniox, Deepgram, Speechmatics,
+> Gladia) and live AI suggestions (Claude, OpenAI, Gemini, Mistral and seven
+> OpenAI-compatible hosts). Profiles and speaker mapping follow in M5/M6.
 
 ## Requirements
 
@@ -92,6 +92,35 @@ connection test shows whether your account can use them.
 Not included: AssemblyAI and Google Cloud STT (no browser-compatible
 streaming auth without a server). OpenAI Realtime and Mistral Voxtral are
 planned as a second step.
+
+## AI (LLM) providers
+
+*Settings → AI suggestions*: choose a provider, paste your key, *Test
+connection* (a real, tiny request with the selected model) and optionally
+*Load available models*. Without a provider, live mode shows the transcript.
+
+| Provider | Default model | Notes |
+|---|---|---|
+| Anthropic (Claude) | `claude-haiku-4-5` | official `@anthropic-ai/sdk`, browser mode |
+| OpenAI | `gpt-6-luna` | Chat Completions, `max_completion_tokens` |
+| Google Gemini | `gemini-3.5-flash-lite` | `streamGenerateContent`, key in header |
+| Mistral | `mistral-small-latest` | Chat Completions |
+| OpenRouter, Groq, Together, DeepSeek, Cerebras, Fireworks, xAI | – (pick from list) | OpenAI-compatible presets |
+
+A free-form base URL is not offered: the Even Hub network whitelist is fixed
+when the app is packed, so only these origins are reachable. All of them
+allow browser (CORS) calls (checked 2026-09-24).
+
+### How suggestions are triggered
+
+- the other person finished a sentence → wait *Pause* (default 0.9 s)
+- I finished a sentence and nobody speaks for 4 s → fresh ideas
+- anyone speaking again postpones; a newer trigger aborts an older request
+- rate limit: *minimum interval* (default 6 s) and *max per minute* (6);
+  blocked triggers are merged and fired when allowed
+- only the last 3 minutes (max 4000 characters) are sent
+- answers stream: the first suggestion appears before the answer is complete
+- quiet mode sends no requests
 
 ## Project structure
 

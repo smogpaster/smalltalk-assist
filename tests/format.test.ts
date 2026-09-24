@@ -28,3 +28,13 @@ describe('suggestion wire format', () => {
     expect(parseSuggestions('{"s":[{"k":"q","t":"unterminated')).toEqual([])
   })
 })
+
+describe('parsePartialSuggestions', () => {
+  it('returns only complete items of a streamed answer', async () => {
+    const { parsePartialSuggestions } = await import('../src/engine/format')
+    expect(parsePartialSuggestions('{"s":[{"k":"q","t":"Wie geht\\u0027s \\"dir\\"?"},{"k":"r","t":"Ich hab')).toEqual([
+      { kind: 'question', text: 'Wie geht\'s "dir"?' },
+    ])
+    expect(parsePartialSuggestions('{"s":[')).toEqual([])
+  })
+})

@@ -187,10 +187,16 @@ export class ConversationSession {
       transcript: this.transcript,
       outputLanguage: () => this.outputLanguage(),
       count: () => SUGGESTIONS_PER_REQUEST,
+      timing: () => {
+        const s = this.deps.settings()
+        return { pauseMs: s.pauseMs, minIntervalMs: s.minIntervalSec * 1000, maxPerMinute: s.maxPerMinute }
+      },
       // Quiet mode hides suggestions; don't pay for requests nobody sees.
       paused: () => this.phase === 'quiet',
       onSuggestions: suggestions => {
         if (generation !== this.generation) return
+        // Streamed updates only ever grow the list; the page resets to the
+        // newest batch.
         this.suggestions = suggestions
         this.page = 0
         this.error = null
@@ -205,6 +211,8 @@ export class ConversationSession {
   }
 
   private outputLanguage(): string {
+    const fixed = this.deps.settings().suggestionLanguage
+    if (!this.demo && fixed !== 'same') return fixed
     const language = this.providers?.language ?? 'en'
     if (language !== 'auto') return language
     return this.detectedLanguage ?? this.deps.fallbackLanguage?.() ?? 'en'

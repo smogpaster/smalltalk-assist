@@ -17,6 +17,7 @@
     "pack": "npm run build && evenhub pack app.json dist -o smalltalk-assist.ehpk"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "@evenrealities/even_hub_sdk": "^0.0.16",
     "@evenrealities/pretext": "^0.1.4"
   },

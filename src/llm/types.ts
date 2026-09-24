@@ -23,4 +23,6 @@ export interface LlmProvider {
    */
   complete(request: LlmRequest, onDelta?: (chunk: string) => void): Promise<string>
   testConnection(): Promise<void>
+  /** Model ids available for this key (for the model picker). */
+  listModels?(): Promise<string[]>
 }

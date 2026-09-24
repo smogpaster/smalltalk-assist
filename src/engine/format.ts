@@ -66,3 +66,24 @@ function extractJson(output: string): unknown {
     return undefined
   }
 }
+
+const ITEM = /\{\s*"k"\s*:\s*"([a-z]+)"\s*,\s*"t"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g
+
+/**
+ * Extracts the suggestions that are already complete in a partially streamed
+ * answer, so the first one can be shown before the model has finished.
+ */
+export function parsePartialSuggestions(partial: string): Suggestion[] {
+  const result: Suggestion[] = []
+  for (const match of partial.matchAll(ITEM)) {
+    const kind = toKind(match[1])
+    let text: string
+    try {
+      text = JSON.parse(`"${match[2]}"`) as string
+    } catch {
+      continue
+    }
+    if (kind && text.trim()) result.push({ kind, text: text.trim() })
+  }
+  return result
+}
