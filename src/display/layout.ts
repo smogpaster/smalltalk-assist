@@ -1,6 +1,6 @@
 import type { Suggestion } from '../core/types'
 import type { Translate } from '../i18n'
-import { LINE_HEIGHT, fitLines, sanitizeForGlasses, spreadLine } from './text'
+import { LINE_HEIGHT, fitLines, fitTail, sanitizeForGlasses, spreadLine } from './text'
 
 /**
  * Canvas 576×288. One status line on top, one body container below, and an
@@ -15,6 +15,9 @@ export const BODY = { x: 0, y: 34, width: 576, height: 254, padding: 4 } as cons
 export const HEADER_INNER_WIDTH = HEADER.width - 2 * HEADER.padding
 export const BODY_INNER_WIDTH = BODY.width - 2 * BODY.padding
 export const BODY_LINES = Math.floor((BODY.height - 2 * BODY.padding) / LINE_HEIGHT)
+
+/** Transcript preview (no LLM configured): the newest words, a few lines. */
+const PREVIEW_LINES = 5
 
 /** No suggestion may take more than this many lines – glanceability first. */
 const MAX_LINES_PER_SUGGESTION = 3
@@ -31,6 +34,10 @@ export interface GlassesViewState {
   perPage: number
   /** Short error text to show instead of suggestions. */
   error?: string
+  /** Latest transcript text, shown while there are no suggestions (transcript-only mode). */
+  preview?: string
+  /** STT connection is being restored. */
+  reconnecting?: boolean
 }
 
 export interface GlassesMenuItem {
@@ -64,7 +71,8 @@ export function linesPerSuggestion(perPage: number): number {
 export function buildGlassesView(state: GlassesViewState, t: Translate, menu: readonly GlassesMenuItem[] = []): GlassesView {
   const status =
     state.phase === 'recording' ? t('glasses.rec') : state.phase === 'quiet' ? t('glasses.paused') : t('glasses.ready')
-  const left = state.demo ? `${status}  ${t('glasses.mock')}` : status
+  const tag = state.reconnecting ? t('glasses.reconnecting') : state.demo ? t('glasses.mock') : ''
+  const left = tag ? `${status}  ${tag}` : status
 
   const perPage = Math.min(3, Math.max(1, state.perPage))
   const total = state.suggestions.length
@@ -83,7 +91,10 @@ function buildBody(state: GlassesViewState, t: Translate, page: number, perPage:
   if (state.phase === 'idle') return error ? `${error}\n\n${t('glasses.idle')}` : t('glasses.idle')
   if (state.phase === 'quiet') return t('glasses.quiet')
   if (error) return error
-  if (state.suggestions.length === 0) return t('glasses.listening')
+  if (state.suggestions.length === 0) {
+    const preview = state.preview ? fitTail(sanitizeForGlasses(state.preview), BODY_INNER_WIDTH, PREVIEW_LINES) : ''
+    return preview ? `${t('glasses.listening')}\n${preview}` : t('glasses.listening')
+  }
 
   const maxLines = linesPerSuggestion(perPage)
   return state.suggestions

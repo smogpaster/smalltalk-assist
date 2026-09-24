@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProviders } from '../src/app/providers'
+import { createProvidersFactory } from '../src/app/providers'
 import { ConversationSession, type SessionSnapshot } from '../src/app/session'
 import { DEFAULT_SETTINGS, type Settings } from '../src/settings/schema'
+
+const createProviders = createProvidersFactory({ get: () => null })
 
 describe('ConversationSession in demo mode', () => {
   let settings: Settings
@@ -61,10 +63,10 @@ describe('ConversationSession in demo mode', () => {
     expect(last.phase).toBe('recording')
   })
 
-  it('reports a clear error in live mode until providers exist', async () => {
+  it('reports a clear error in live mode without provider or key', async () => {
     settings.mode = 'live'
     await session.start()
     expect(last.phase).toBe('idle')
-    expect(last.error?.kind).toBe('unsupported')
+    expect(last.error?.kind).toBe('not_configured')
   })
 })

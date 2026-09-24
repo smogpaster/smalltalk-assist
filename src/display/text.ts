@@ -82,6 +82,29 @@ export function fitLines(text: string, width: number, maxLines: number): string 
   return fitted.replace(/[\s,;:.–-]+$/, '') + '…'
 }
 
+/**
+ * Keeps the END of `text` (newest words of a transcript) within `maxLines`,
+ * prefixing "…" when the beginning was cut.
+ */
+export function fitTail(text: string, width: number, maxLines: number): string {
+  if (maxLines <= 0) return ''
+  if (lineCount(text, width) <= maxLines) return text
+  const chars = Array.from(text)
+  let low = 0
+  let high = chars.length
+  // Smallest cut such that "…" + rest fits.
+  while (low < high) {
+    const mid = (low + high) >> 1
+    if (lineCount('…' + chars.slice(mid).join('').trimStart(), width) <= maxLines) high = mid
+    else low = mid + 1
+  }
+  let rest = chars.slice(low).join('')
+  // Prefer starting at a word boundary if one is close.
+  const space = rest.indexOf(' ')
+  if (space > 0 && space < 12) rest = rest.slice(space + 1)
+  return '…' + rest.trimStart()
+}
+
 /** Pads `left` with spaces so that `right` appears near the right edge. */
 export function spreadLine(left: string, right: string, width: number): string {
   const space = Math.max(1, getTextWidth(' '))

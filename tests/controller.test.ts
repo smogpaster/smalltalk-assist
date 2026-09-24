@@ -3,12 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GlassesController } from '../src/app/glassesController'
 import { MenuId } from '../src/app/menu'
 import { ConversationSession } from '../src/app/session'
-import { createProviders } from '../src/app/providers'
+import { createProvidersFactory } from '../src/app/providers'
 import { EventHub } from '../src/bridge/hub'
 import { BridgeQueue } from '../src/bridge/queue'
 import { GlassesRenderer, type RenderBridge } from '../src/display/renderer'
 import { createTranslator } from '../src/i18n'
 import { DEFAULT_SETTINGS } from '../src/settings/schema'
+
+const createProviders = createProvidersFactory({ get: () => null })
 
 describe('GlassesController gestures', () => {
   let hub: EventHub

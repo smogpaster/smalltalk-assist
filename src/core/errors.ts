@@ -13,6 +13,7 @@ export type ProviderErrorKind =
   | 'bad_request' // wrong model name, invalid parameters
   | 'server'
   | 'unsupported'
+  | 'not_configured' // provider or key missing in settings
   | 'unknown'
 
 export class ProviderError extends Error {

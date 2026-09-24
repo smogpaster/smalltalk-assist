@@ -73,6 +73,8 @@ export class GlassesController {
         page: s.page,
         perPage: s.perPage,
         error: s.error ? this.deps.translate()(`error.${s.error.kind}`) : undefined,
+        preview: s.transcriptOnly ? s.transcript.at(-1)?.text : undefined,
+        reconnecting: s.reconnecting,
       },
       this.deps.translate(),
       buildMenu(this.deps.translate()),

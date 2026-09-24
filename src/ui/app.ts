@@ -29,7 +29,7 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
     document.documentElement.lang = ctx.settings.get().uiLanguage === 'auto' ? navigator.language : ctx.settings.get().uiLanguage
     const status = statusChip(snapshot, ctx)
     const page =
-      tab === 'home' ? renderHome(ctx, snapshot) : tab === 'settings' ? renderSettings(ctx) : renderDiagnostics(ctx, schedule)
+      tab === 'home' ? renderHome(ctx, snapshot) : tab === 'settings' ? renderSettings(ctx, schedule) : renderDiagnostics(ctx, schedule)
     const tabs = el(
       'nav',
       { class: 'tabs' },

@@ -1,7 +1,7 @@
 import type { AudioInput } from '../audio/input'
 import { ProviderError, toProviderError } from '../core/errors'
-import { trace } from '../diag/trace'
 import type { Suggestion, TranscriptSegment } from '../core/types'
+import { trace } from '../diag/trace'
 import { clampPage } from '../display/layout'
 import { SuggestionEngine } from '../engine/engine'
 import { Transcript } from '../engine/transcript'
@@ -14,6 +14,8 @@ export type SessionPhase = 'idle' | 'starting' | 'recording' | 'quiet'
 
 /** Always ask for 3; the glasses show 1–3 at a time and the rest is one swipe away. */
 const SUGGESTIONS_PER_REQUEST = 3
+/** Delays before reconnect attempts after the STT connection dropped. */
+const RECONNECT_DELAYS_MS = [1000, 3000, 6000]
 
 export interface SessionSnapshot {
   phase: SessionPhase
@@ -23,15 +25,22 @@ export interface SessionSnapshot {
   page: number
   perPage: number
   error: ProviderError | null
+  /** No LLM configured: the glasses show the latest transcript instead of suggestions. */
+  transcriptOnly: boolean
+  reconnecting: boolean
 }
 
 export interface SessionProviders {
   stt: SttProvider
-  llm: LlmProvider
+  /** null until an LLM is configured (transcript-only mode). */
+  llm: LlmProvider | null
   /** Diarization label of the wearer if known up front (demo mode). */
   selfLabel?: string
   /** Whether audio must be captured (false for the scripted demo). */
   needsAudio: boolean
+  /** Conversation language code or 'auto'. */
+  language: string
+  diarization: boolean
 }
 
 export interface SessionDeps {
@@ -39,6 +48,8 @@ export interface SessionDeps {
   settings: () => Settings
   /** Builds providers for the current settings; throws ProviderError if not configured. */
   createProviders(settings: Settings): SessionProviders
+  /** Language for suggestions when the conversation language is auto and nothing was detected yet. */
+  fallbackLanguage?: () => string
 }
 
 type Listener = (snapshot: SessionSnapshot) => void
@@ -55,11 +66,17 @@ export class ConversationSession {
   private error: ProviderError | null = null
   private readonly transcript = new Transcript()
   private readonly speakers = new SpeakerMapper()
+  private providers: SessionProviders | null = null
   private stt: SttSession | null = null
   private engine: SuggestionEngine | null = null
   private listeners = new Set<Listener>()
   /** Incremented on every start/stop so late callbacks from an old run are ignored. */
   private generation = 0
+  /** Incremented per STT connection so utterance ids stay unique across reconnects. */
+  private connection = 0
+  private reconnectAttempt = 0
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private detectedLanguage: string | null = null
 
   constructor(private readonly deps: SessionDeps) {}
 
@@ -79,6 +96,8 @@ export class ConversationSession {
       page: this.page,
       perPage: this.deps.settings().suggestionsPerPage,
       error: this.error,
+      transcriptOnly: this.phase !== 'idle' && this.providers !== null && this.providers.llm === null,
+      reconnecting: this.reconnectTimer !== null,
     }
   }
 
@@ -94,53 +113,23 @@ export class ConversationSession {
     const settings = this.deps.settings()
     this.demo = settings.mode === 'demo'
     this.error = null
+    this.detectedLanguage = null
+    this.reconnectAttempt = 0
     this.phase = 'starting'
     this.emit()
 
     try {
       const providers = this.deps.createProviders(settings)
+      this.providers = providers
       this.speakers.setSelfLabel(providers.selfLabel ?? null)
-      this.engine = new SuggestionEngine({
-        llm: providers.llm,
-        transcript: this.transcript,
-        // Conversation language settings arrive with the STT adapters (M3).
-        outputLanguage: () => this.deps.settings().demoLanguage,
-        count: () => SUGGESTIONS_PER_REQUEST,
-        // Quiet mode hides suggestions; don't pay for requests nobody sees.
-        paused: () => this.phase === 'quiet',
-        onSuggestions: suggestions => {
-          if (generation !== this.generation) return
-          this.suggestions = suggestions
-          this.page = 0
-          this.error = null
-          this.emit()
-        },
-        onError: error => {
-          if (generation !== this.generation) return
-          this.error = error
-          this.emit()
-        },
-      })
+      if (providers.llm) this.engine = this.createEngine(providers.llm, generation)
 
-      this.stt = await providers.stt.start(
-        { language: settings.demoLanguage, diarization: true, sampleRate: 16000 },
-        {
-          onResult: result => {
-            if (generation === this.generation) this.handleResult(result)
-          },
-          onError: error => {
-            if (generation !== this.generation) return
-            trace('session', 'stt error', { kind: error.kind })
-            this.error = error
-            this.emit()
-          },
-        },
-      )
+      await this.connectStt(generation)
 
       if (providers.needsAudio) {
         if (!this.deps.audio) throw new ProviderError('audio', 'unsupported', 'No microphone available outside the Even app')
-        const stt = this.stt
-        const ok = await this.deps.audio.start(settings.micSource, frame => stt.sendPcm(frame.pcm))
+        // Frames go to whatever STT connection is current (null while reconnecting).
+        const ok = await this.deps.audio.start(settings.micSource, frame => this.stt?.sendPcm(frame.pcm))
         if (!ok) throw new ProviderError('audio', 'unsupported', 'Microphone could not be opened')
       }
 
@@ -150,7 +139,7 @@ export class ConversationSession {
     } catch (err) {
       if (generation !== this.generation) return
       const error = toProviderError('session', err)
-      trace('session', 'start failed', { kind: error.kind })
+      trace('session', 'start failed', { kind: error.kind, provider: error.provider })
       await this.teardown()
       this.error = error
       this.phase = 'idle'
@@ -192,9 +181,93 @@ export class ConversationSession {
     if (this.isActive && this.deps.audio?.active) await this.deps.audio.rearm()
   }
 
-  private handleResult(result: SttResult): void {
+  private createEngine(llm: LlmProvider, generation: number): SuggestionEngine {
+    return new SuggestionEngine({
+      llm,
+      transcript: this.transcript,
+      outputLanguage: () => this.outputLanguage(),
+      count: () => SUGGESTIONS_PER_REQUEST,
+      // Quiet mode hides suggestions; don't pay for requests nobody sees.
+      paused: () => this.phase === 'quiet',
+      onSuggestions: suggestions => {
+        if (generation !== this.generation) return
+        this.suggestions = suggestions
+        this.page = 0
+        this.error = null
+        this.emit()
+      },
+      onError: error => {
+        if (generation !== this.generation) return
+        this.error = error
+        this.emit()
+      },
+    })
+  }
+
+  private outputLanguage(): string {
+    const language = this.providers?.language ?? 'en'
+    if (language !== 'auto') return language
+    return this.detectedLanguage ?? this.deps.fallbackLanguage?.() ?? 'en'
+  }
+
+  private async connectStt(generation: number): Promise<void> {
+    const providers = this.providers!
+    const connection = ++this.connection
+    const started = Date.now()
+    const stt = await providers.stt.start(
+      { language: providers.language, diarization: providers.diarization, sampleRate: 16000 },
+      {
+        onResult: result => {
+          if (generation === this.generation && connection === this.connection) this.handleResult(result, connection)
+        },
+        onError: error => {
+          if (generation !== this.generation || connection !== this.connection) return
+          trace('session', 'stt error', { kind: error.kind, provider: error.provider })
+          this.error = error
+          if (error.retryable) this.scheduleReconnect(generation)
+          this.emit()
+        },
+      },
+    )
+    if (generation !== this.generation) {
+      await stt.close()
+      return
+    }
+    this.stt = stt
+    trace('session', 'stt connected', { provider: providers.stt.id, ms: Date.now() - started, connection })
+  }
+
+  private scheduleReconnect(generation: number): void {
+    if (this.reconnectTimer || this.phase === 'idle') return
+    this.stt = null
+    const delay = RECONNECT_DELAYS_MS[this.reconnectAttempt]
+    if (delay === undefined) {
+      trace('session', 'reconnect gave up')
+      return
+    }
+    this.reconnectAttempt++
+    trace('session', 'reconnect scheduled', { attempt: this.reconnectAttempt, ms: delay })
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null
+      if (generation !== this.generation) return
+      try {
+        await this.connectStt(generation)
+        this.reconnectAttempt = 0
+        this.error = null
+      } catch (err) {
+        const error = toProviderError('session', err)
+        this.error = error
+        if (error.retryable) this.scheduleReconnect(generation)
+      }
+      this.emit()
+    }, delay)
+    this.emit()
+  }
+
+  private handleResult(result: SttResult, connection: number): void {
+    if (result.language) this.detectedLanguage = result.language.split('-')[0]
     const segment: TranscriptSegment = {
-      id: result.id,
+      id: `${connection}:${result.id}`,
       text: result.text,
       isFinal: result.isFinal,
       speakerLabel: result.speakerLabel,
@@ -210,14 +283,18 @@ export class ConversationSession {
 
   /** Stops everything and forgets the conversation. */
   private async teardown(): Promise<void> {
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
+    this.reconnectTimer = null
     this.engine?.stop()
     this.engine = null
     const stt = this.stt
     this.stt = null
+    this.providers = null
     await Promise.allSettled([this.deps.audio?.stop(), stt?.close()])
     this.transcript.clear()
     this.suggestions = []
     this.page = 0
+    this.detectedLanguage = null
   }
 
   private emit(): void {

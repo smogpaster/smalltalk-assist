@@ -37,10 +37,12 @@ export function selectField<T extends string | number>(
   value: T,
   options: readonly { value: T; label: string }[],
   onChange: (value: T) => void,
+  disabled = false,
 ): HTMLElement {
   const select = el(
     'select',
     {
+      disabled,
       on: {
         change: event => {
           const raw = (event.target as HTMLSelectElement).value

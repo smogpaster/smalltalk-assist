@@ -22,9 +22,17 @@
         "https://api.soniox.com",
         "wss://stt-rt.soniox.com",
         "https://api.deepgram.com",
-        "wss://api.deepgram.com"
+        "wss://api.deepgram.com",
+        "https://mp.speechmatics.com",
+        "wss://eu.rt.speechmatics.com",
+        "https://api.gladia.io",
+        "wss://api.gladia.io"
       ]
     }
   ],
-  "supported_languages": ["de", "en", "ja"]
+  "supported_languages": [
+    "de",
+    "en",
+    "ja"
+  ]
 }

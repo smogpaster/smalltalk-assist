@@ -5,8 +5,10 @@ conversation, transcribes it and shows short small-talk suggestions (questions
 and reply ideas) on the glasses. Bring your own API keys; transcripts and
 suggestions live only in memory.
 
-> Status: **milestone 1** – scaffold, glasses display, gestures, demo mode,
-> diagnostics. Real speech-to-text and LLM providers follow in milestones 3–4.
+> Status: **milestone 3 (part 1)** – demo mode, glasses display, gestures,
+> contextual menu, diagnostics, live speech-to-text (Soniox, Deepgram,
+> Speechmatics, Gladia). LLM suggestions for live mode follow in milestone 4;
+> until then live mode shows the transcript on the glasses.
 
 ## Requirements
 
@@ -70,6 +72,26 @@ Japanese – no microphone, no keys, no network. Switch it in *Settings*.
 **Diagnostics** (phone screen) checks WebSockets, HTTPS, the microphone
 (including the glasses' self/other speaker classification) and glyph rendering
 on the real device. "Copy report" produces a text without keys or speech.
+
+## Speech-to-text providers
+
+Choose one in *Settings → Speech recognition*, paste your API key and press
+*Test connection*. Keys are stored only on the phone (Even app storage) and
+sent only to that provider.
+
+| Provider | Auth from the app | Speaker separation | Auto language |
+|---|---|---|---|
+| Soniox (`stt-rt-v5`) | key inside the first WebSocket message | yes | yes |
+| Deepgram (`nova-3`) | WebSocket subprotocol `token` | yes | yes (`multi`) |
+| Speechmatics | 60 s temporary key (JWT) in the URL¹ | yes | no |
+| Gladia (`solaria-1`) | session URL from `POST /v2/live` | no (live) | yes |
+
+¹ Speechmatics documents temporary keys partly as an enterprise feature; the
+connection test shows whether your account can use them.
+
+Not included: AssemblyAI and Google Cloud STT (no browser-compatible
+streaming auth without a server). OpenAI Realtime and Mistral Voxtral are
+planned as a second step.
 
 ## Project structure
 

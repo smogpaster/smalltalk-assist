@@ -1,5 +1,5 @@
 import { GlassesController } from './app/glassesController'
-import { createProviders } from './app/providers'
+import { createProvidersFactory } from './app/providers'
 import { ConversationSession } from './app/session'
 import { BridgeAudioInput } from './audio/input'
 import { connectBridge } from './bridge/connect'
@@ -8,10 +8,12 @@ import { EventHub } from './bridge/hub'
 import { attachPreviewKeys, previewRenderBridge } from './bridge/preview'
 import { BridgeQueue } from './bridge/queue'
 import { GlassesRenderer } from './display/renderer'
-import { createTranslator, resolveLanguage, type Translate } from './i18n'
+import { createTranslator, resolveLanguage, type Translate, type UiLanguage } from './i18n'
+import { KeyStore } from './settings/keys'
 import { BridgeKeyValueStore, LocalKeyValueStore } from './settings/kv'
 import type { Settings } from './settings/schema'
 import { SettingsStore } from './settings/store'
+import { STT_PROVIDERS } from './stt/registry'
 import { mountUi } from './ui/app'
 
 async function bootstrap() {
@@ -27,15 +29,23 @@ async function bootstrap() {
   const settings = new SettingsStore(kv)
   await settings.load()
   await persistTrace(kv)
+  const keys = new KeyStore(kv)
+  await keys.load(STT_PROVIDERS.map(p => p.id))
 
   let translate: Translate = translatorFor(settings.get())
+  let uiLanguage = languageFor(settings.get())
 
   const hub = new EventHub()
   if (bridge) hub.attach(bridge)
   else attachPreviewKeys(hub)
 
   const audio = bridge ? new BridgeAudioInput(bridge, queue, hub) : null
-  const session = new ConversationSession({ audio, settings: () => settings.get(), createProviders })
+  const session = new ConversationSession({
+    audio,
+    settings: () => settings.get(),
+    createProviders: createProvidersFactory(keys),
+    fallbackLanguage: () => uiLanguage,
+  })
 
   const glassesBridge = bridge ?? previewRenderBridge
   const renderer = new GlassesRenderer(glassesBridge, queue)
@@ -64,6 +74,7 @@ async function bootstrap() {
   const ui = mountUi(root, {
     session,
     settings,
+    keys,
     t: () => translate,
     glassesView: () => controller.view(),
     inEvenApp,
@@ -76,6 +87,7 @@ async function bootstrap() {
 
   settings.subscribe(next => {
     translate = translatorFor(next)
+    uiLanguage = languageFor(next)
     controller.refresh()
     ui.refresh()
   })
@@ -83,9 +95,12 @@ async function bootstrap() {
   window.addEventListener('pagehide', () => void shutdown())
 }
 
+function languageFor(settings: Settings): UiLanguage {
+  return settings.uiLanguage === 'auto' ? resolveLanguage(navigator.languages ?? [navigator.language]) : settings.uiLanguage
+}
+
 function translatorFor(settings: Settings): Translate {
-  const language = settings.uiLanguage === 'auto' ? resolveLanguage(navigator.languages ?? [navigator.language]) : settings.uiLanguage
-  return createTranslator(language)
+  return createTranslator(languageFor(settings))
 }
 
 void bootstrap()

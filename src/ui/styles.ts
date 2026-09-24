@@ -53,6 +53,9 @@ select, input, textarea { font: inherit; color: var(--text); background: var(--i
   padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); gap: 6px; }
 .tabs button { flex: 1; appearance: none; border: 0; background: none; color: var(--text-dim); font: inherit; font-size: 13px; padding: 10px 4px; border-radius: 12px; }
 .tabs button.active { color: var(--text); background: var(--surface); font-weight: 600; }
+.toggle { display: flex; align-items: center; gap: 10px; margin: 12px 0; font-size: 15px; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--text); }
+a { color: inherit; word-break: break-all; }
 .report { font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all; background: var(--input); border-radius: 12px; padding: 10px; margin-top: 8px; }
 .ok { color: var(--ok); } .bad { color: var(--danger); }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; margin-top: 8px; }
