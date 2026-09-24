@@ -60,6 +60,7 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
     `Suggest ${input.count} things the wearer could say next, written in ${language}.`,
     'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotes around the text; never repeat what was already said.',
     'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
+    'If the partner\'s last line is a question, the first suggestion must be a short answer idea to exactly that question (kind "r").',
     ...contextLines(input.context),
     'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."},{"k":"r","t":"..."}]}',
   ].join('\n')

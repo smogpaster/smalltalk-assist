@@ -83,8 +83,15 @@ export class SuggestionEngine {
       return
     }
     const timing = this.timing()
-    const delay = segment.speaker === 'self' ? timing.silenceMs : timing.pauseMs
-    this.schedule(delay, segment.speaker === 'self' ? 'silence' : 'turn-end')
+    if (segment.speaker === 'self') {
+      this.schedule(timing.silenceMs, 'silence')
+      return
+    }
+    // A question from the other person is the moment the wearer needs help
+    // most: it bypasses the novelty threshold ("Und du?" is short) and the
+    // rate limit (earlier suggestions during the turn may have used it up).
+    if (isQuestion(segment.text)) this.schedule(timing.pauseMs, 'question', true)
+    else this.schedule(timing.pauseMs, 'turn-end')
   }
 
   /** Call when leaving quiet mode. */
@@ -111,11 +118,11 @@ export class SuggestionEngine {
     return { ...DEFAULT_TIMING, ...this.options.timing?.() }
   }
 
-  private schedule(delayMs: number, reason: string): void {
+  private schedule(delayMs: number, reason: string, force = false): void {
     this.clearTimer()
     this.timer = setTimeout(() => {
       this.timer = null
-      void this.fire(reason)
+      void this.fire(reason, force)
     }, delayMs)
   }
 
@@ -197,6 +204,12 @@ export class SuggestionEngine {
       if (this.inFlight === controller) this.inFlight = null
     }
   }
+}
+
+/** Ends with a question mark (Latin or full-width) or Japanese question particle. */
+export function isQuestion(text: string): boolean {
+  const trimmed = text.trim()
+  return /[?？]["'”」』)）]*$/.test(trimmed) || /か[。.]?$/.test(trimmed)
 }
 
 /** Keeps the newest segments whose text fits into `maxChars`. */

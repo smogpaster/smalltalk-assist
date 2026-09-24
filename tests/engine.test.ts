@@ -204,3 +204,42 @@ describe('SuggestionEngine', () => {
     expect(llm.calls).toHaveLength(2)
   })
 })
+
+describe('SuggestionEngine questions', () => {
+  it('answers a short final question right away despite rate limit and novelty threshold', async () => {
+    vi.useFakeTimers()
+    const llm = new FakeLlm()
+    const transcript = new Transcript()
+    const engine = new SuggestionEngine({
+      llm,
+      transcript,
+      outputLanguage: () => 'de',
+      count: () => 3,
+      timing: () => ({ pauseMs: 300, minIntervalMs: 6000, maxPerMinute: 6, minNewChars: 12 }),
+      onSuggestions: () => {},
+      onError: () => {},
+    })
+    const feed = (s: TranscriptSegment) => {
+      transcript.upsert(s)
+      engine.onSegment(s)
+    }
+    feed(seg('1', 'Ich war letzte Woche in Kroatien segeln.', 'other'))
+    await vi.advanceTimersByTimeAsync(400)
+    expect(llm.calls).toHaveLength(1)
+    feed(seg('2', 'Und du?', 'other'))
+    await vi.advanceTimersByTimeAsync(400)
+    expect(llm.calls).toHaveLength(2)
+    expect(llm.calls[1].messages[0].content).toContain('Und du?')
+    engine.stop()
+    vi.useRealTimers()
+  })
+
+  it('recognises questions in several scripts', async () => {
+    const { isQuestion } = await import('../src/engine/engine')
+    expect(isQuestion('Und du?')).toBe(true)
+    expect(isQuestion('How about you?"')).toBe(true)
+    expect(isQuestion('週末は何をしましたか？')).toBe(true)
+    expect(isQuestion('お元気ですか。')).toBe(true)
+    expect(isQuestion('Ich war segeln.')).toBe(false)
+  })
+})
