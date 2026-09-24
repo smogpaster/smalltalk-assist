@@ -4,6 +4,7 @@ Assets in `store/` (all greyscale, checked):
 
 | File | Use |
 |---|---|
+| `icon-24.png` | portal app icon: 24×24 monochrome PNG, white on transparent (`scripts/icon24.py`; `icon-24-preview.png` is a 16× preview) |
 | `icon-foreground.png` / `-1024.png` | icon foreground (transparent) |
 | `icon-background.png` | icon background (solid) |
 | `icon.png` / `icon-1024.png` | composed icon, for previews |
