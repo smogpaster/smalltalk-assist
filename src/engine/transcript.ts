@@ -18,6 +18,11 @@ export class Transcript {
     this.segments = this.segments.map(s => (s.speakerLabel === label ? { ...s, speaker } : s))
   }
 
+  swapSpeakers(): void {
+    const flip = (s: TranscriptSegment['speaker']) => (s === 'self' ? 'other' : s === 'other' ? 'self' : s)
+    this.segments = this.segments.map(s => ({ ...s, speaker: flip(s.speaker) }))
+  }
+
   all(): readonly TranscriptSegment[] {
     return this.segments
   }

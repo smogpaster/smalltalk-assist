@@ -1,5 +1,6 @@
 import { toProviderError, ProviderError } from '../../core/errors'
 import { ensureOk, readSse, withTimeout } from '../stream'
+import { trace } from '../../diag/trace'
 import type { LlmProvider, LlmRequest } from '../types'
 
 const ID = 'gemini'
@@ -27,6 +28,8 @@ export class GeminiProvider implements LlmProvider {
   async complete(request: LlmRequest, onDelta?: (chunk: string) => void): Promise<string> {
     const timeout = withTimeout(request.signal, request.timeoutMs ?? 15_000)
     let text = ''
+    let chunks = 0
+    const started = Date.now()
     try {
       const response = await fetch(`${BASE_URL}/models/${encodeURIComponent(this.model)}:streamGenerateContent?alt=sse`, {
         method: 'POST',
@@ -42,8 +45,11 @@ export class GeminiProvider implements LlmProvider {
         }),
         signal: timeout.signal,
       })
+      // Timing points: where does a slow request hang (headers vs. stream)?
+      trace('llm', 'gemini headers', { status: response.status, ms: Date.now() - started })
       await ensureOk(ID, response)
       await readSse(response, data => {
+        chunks++
         const chunk = JSON.parse(data) as GeminiChunk
         if (chunk.error) throw new ProviderError(ID, 'server', chunk.error.message ?? 'Stream error', chunk.error.code)
         for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
@@ -52,8 +58,10 @@ export class GeminiProvider implements LlmProvider {
           onDelta?.(part.text)
         }
       })
+      trace('llm', 'gemini done', { ms: Date.now() - started, chunks, chars: text.length })
       return text
     } catch (err) {
+      trace('llm', 'gemini failed', { ms: Date.now() - started, chunks, timedOut: timeout.timedOut() })
       if (timeout.timedOut()) throw new ProviderError(ID, 'timeout', 'No answer in time')
       throw toProviderError(ID, err)
     } finally {

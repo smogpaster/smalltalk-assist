@@ -24,6 +24,18 @@ export function renderHome(ctx: UiContext, s: SessionSnapshot): HTMLElement {
     ? el('button', { class: 'btn secondary', on: { click: () => ctx.session.toggleQuiet() } }, t('ui.status.quiet'))
     : null
 
+  // Speaker fixes only make sense in a live conversation.
+  const speakerTools =
+    active && !s.demo
+      ? el('div', {},
+          el('div', { class: 'btn-row', style: 'margin-top:8px' },
+            el('button', { class: 'btn secondary', on: { click: () => ctx.session.calibrateSelf() } }, t('ui.speaker.calibrate')),
+            el('button', { class: 'btn secondary', on: { click: () => ctx.session.swapSpeakers() } }, t('ui.speaker.swap')),
+          ),
+          s.calibrating ? el('p', { class: 'dim' }, t('ui.speaker.calibrating')) : null,
+        )
+      : null
+
   const mode = el('p', { class: 'dim' }, s.demo || ctx.settings.get().mode === 'demo' ? t('ui.mode.mock') : t('ui.mode.live'))
 
   const suggestions = s.suggestions.length
@@ -44,7 +56,7 @@ export function renderHome(ctx: UiContext, s: SessionSnapshot): HTMLElement {
   return el(
     'div',
     {},
-    el('div', { class: 'card' }, mode, el('div', { class: 'btn-row' }, startStop, quiet),
+    el('div', { class: 'card' }, mode, el('div', { class: 'btn-row' }, startStop, quiet), speakerTools,
       s.error ? el('p', { class: 'error' }, t(`error.${s.error.kind}` as MessageKey)) : null),
     el('h2', {}, t('ui.glassesPreview')),
     el('div', { class: 'glasses', 'aria-label': t('ui.glassesPreview') }, el('div', { class: 'gh' }, view.header), view.body),

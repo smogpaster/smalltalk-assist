@@ -70,3 +70,49 @@ describe('ConversationSession in demo mode', () => {
     expect(last.error?.kind).toBe('not_configured')
   })
 })
+
+describe('ConversationSession reconnects', () => {
+  it('does not reconnect after a credit/key error followed by the server closing', async () => {
+    vi.useFakeTimers()
+    const { ProviderError } = await import('../src/core/errors')
+    let starts = 0
+    let callbacks: import('../src/stt/types').SttCallbacks | null = null
+    const stt: import('../src/stt/types').SttProvider = {
+      id: 'fake',
+      capabilities: { streaming: true, diarization: false, languages: ['de'], autoDetect: false, transports: ['websocket'] },
+      testConnection: async () => {},
+      start: async (_o, cb) => {
+        starts++
+        callbacks = cb
+        return { sendPcm() {}, async close() {} }
+      },
+    }
+    const audio = { active: true, start: async () => true, stop: async () => {}, rearm: async () => {} }
+    const session = new ConversationSession({
+      audio,
+      settings: () => ({ ...DEFAULT_SETTINGS, mode: 'live' }),
+      createProviders: () => ({ stt, llm: null, needsAudio: true, language: 'de', diarization: false }),
+    })
+    let last!: SessionSnapshot
+    session.subscribe(s => (last = s))
+    await session.start()
+    callbacks!.onError(new ProviderError('fake', 'quota', 'balance exhausted', 402))
+    callbacks!.onError(new ProviderError('fake', 'network', 'Connection closed (1000)'))
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(starts).toBe(1)
+    expect(last.error?.kind).toBe('quota')
+    expect(last.reconnecting).toBe(false)
+
+    // A plain network drop still reconnects, and gives up after three attempts.
+    await session.stop()
+    starts = 0
+    await session.start()
+    for (let i = 0; i < 5; i++) {
+      callbacks!.onError(new ProviderError('fake', 'network', 'dropped'))
+      await vi.advanceTimersByTimeAsync(7000)
+    }
+    expect(starts).toBe(4)
+    await session.stop()
+    vi.useRealTimers()
+  })
+})

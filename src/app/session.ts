@@ -28,6 +28,8 @@ export interface SessionSnapshot {
   /** No LLM configured: the glasses show the latest transcript instead of suggestions. */
   transcriptOnly: boolean
   reconnecting: boolean
+  /** The next finished utterance will be taken as the wearer's voice. */
+  calibrating: boolean
 }
 
 export interface SessionProviders {
@@ -80,6 +82,10 @@ export class ConversationSession {
   /** Wall-clock start of the current STT stream; result times are relative to it. */
   private sttStartedAt = 0
   private firstResultTraced = false
+  /** Audio time (ms) sent on the current STT connection; aligns frames with result timestamps. */
+  private audioMs = 0
+  /** A connection that reported a non-retryable error (key, credit) must not be reconnected. */
+  private fatalConnection = -1
 
   constructor(private readonly deps: SessionDeps) {}
 
@@ -101,6 +107,7 @@ export class ConversationSession {
       error: this.error,
       transcriptOnly: this.phase !== 'idle' && this.providers !== null && this.providers.llm === null,
       reconnecting: this.reconnectTimer !== null,
+      calibrating: this.speakers.isCalibrating,
     }
   }
 
@@ -118,6 +125,7 @@ export class ConversationSession {
     this.error = null
     this.detectedLanguage = null
     this.reconnectAttempt = 0
+    this.speakers.reset()
     this.phase = 'starting'
     this.emit()
 
@@ -132,7 +140,14 @@ export class ConversationSession {
       if (providers.needsAudio) {
         if (!this.deps.audio) throw new ProviderError('audio', 'unsupported', 'No microphone available outside the Even app')
         // Frames go to whatever STT connection is current (null while reconnecting).
-        const ok = await this.deps.audio.start(settings.micSource, frame => this.stt?.sendPcm(frame.pcm))
+        const ok = await this.deps.audio.start(settings.micSource, frame => {
+          if (!this.stt) return
+          this.stt.sendPcm(frame.pcm)
+          // PCM s16le mono 16 kHz = 32 bytes per ms.
+          const durationMs = frame.pcm.byteLength / 32
+          this.speakers.observe(this.audioMs, this.audioMs + durationMs, frame.speakerRole)
+          this.audioMs += durationMs
+        })
         if (!ok) throw new ProviderError('audio', 'unsupported', 'Microphone could not be opened')
       }
 
@@ -176,6 +191,21 @@ export class ConversationSession {
     const next = clampPage(this.page + delta, this.suggestions.length, perPage)
     if (next === this.page) return
     this.page = next
+    this.emit()
+  }
+
+  /** Manual correction: everything labelled "me" becomes "other" and vice versa. */
+  swapSpeakers(): void {
+    this.speakers.swap()
+    this.transcript.swapSpeakers()
+    trace('session', 'speakers swapped')
+    this.emit()
+  }
+
+  /** Calibration: the next finished utterance is the wearer's. */
+  calibrateSelf(): void {
+    this.speakers.markNextAsSelf()
+    trace('session', 'calibration armed')
     this.emit()
   }
 
@@ -233,9 +263,13 @@ export class ConversationSession {
         },
         onError: error => {
           if (generation !== this.generation || connection !== this.connection) return
+          // After a key/credit error the server closes the socket; that close
+          // must not trigger reconnects (which would fail the same way forever).
+          if (this.fatalConnection === connection) return
           trace('session', 'stt error', { kind: error.kind, provider: error.provider })
           this.error = error
           if (error.retryable) this.scheduleReconnect(generation)
+          else this.fatalConnection = connection
           this.emit()
         },
       },
@@ -245,6 +279,8 @@ export class ConversationSession {
       return
     }
     this.stt = stt
+    this.audioMs = 0
+    this.speakers.resetTimeline()
     this.sttStartedAt = Date.now()
     this.firstResultTraced = false
     trace('session', 'stt connected', { provider: providers.stt.id, ms: Date.now() - started, connection })
@@ -265,7 +301,8 @@ export class ConversationSession {
       if (generation !== this.generation) return
       try {
         await this.connectStt(generation)
-        this.reconnectAttempt = 0
+        // reconnectAttempt is reset once results arrive again (handleResult),
+        // not here: a server may accept the socket and close it right away.
         this.error = null
       } catch (err) {
         const error = toProviderError('session', err)
@@ -279,12 +316,13 @@ export class ConversationSession {
 
   private handleResult(result: SttResult, connection: number): void {
     if (result.language) this.detectedLanguage = result.language.split('-')[0]
+    this.reconnectAttempt = 0
     const segment: TranscriptSegment = {
       id: `${connection}:${result.id}`,
       text: result.text,
       isFinal: result.isFinal,
       speakerLabel: result.speakerLabel,
-      speaker: this.speakers.map(result.speakerLabel),
+      speaker: this.speakers.classify(result.speakerLabel, result.startMs, result.endMs, result.isFinal),
       startMs: result.startMs,
       endMs: result.endMs,
     }
