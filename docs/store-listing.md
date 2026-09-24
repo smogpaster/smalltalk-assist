@@ -13,6 +13,12 @@ Assets in `store/` (all greyscale, checked):
 The portal did not document pixel sizes; SVG sources are next to the PNGs, so
 other sizes are one `rsvg-convert -w <n> -h <n>` away.
 
+## Tags
+
+Primary: conversation, small talk, AI, transcription, networking
+
+More, if the portal allows: productivity, social, communication, speech to text, BYOK
+
 ---
 
 ## Deutsch
