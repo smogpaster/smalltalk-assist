@@ -28,6 +28,7 @@ deiner G2 ein: passende Fragen und Ideen für Antworten – besonders dann, wenn
 dein Gegenüber dich gerade etwas fragt.
 
 - Vorschläge im Vorbeischauen, 1–3 gleichzeitig, durchblättern per Wischen
+- wahlweise Antwortideen oder nur Stichpunkte und Fragen – du formulierst selbst
 - Profile (Networking, Familienfeier, Kundentermin …) mit Ton, Themen zum Vermeiden und Zielen
 - Infos zu deinem Gegenüber für das nächste Gespräch
 - erkennt, wer spricht – Vorschläge reagieren auf dein Gegenüber
@@ -59,6 +60,7 @@ questions to ask and ideas for replies – especially when the other person has
 just asked you something.
 
 - Glanceable suggestions, 1–3 at a time, swipe to page
+- Reply ideas, or just keywords and questions – you do the talking
 - Profiles (networking, family party, client meeting …) with tone, topics to avoid and goals
 - Notes about the person you're meeting
 - Knows who is speaking – suggestions react to the other person
@@ -88,6 +90,7 @@ SmallTalk Assist は会話を聞き取り、G2 に短い提案を表示します
 返答のアイデアを、特に相手から質問されたときにすぐ提案します。
 
 - ひと目で読める提案（同時に1〜3件、スワイプで切り替え）
+- 返答案か、キーワードと質問だけかを選択可能
 - プロフィール（ネットワーキング、家族の集まり、商談など）：トーン、避けたい話題、目的
 - 会話相手のメモ
 - 話者を判別し、相手の発言に反応

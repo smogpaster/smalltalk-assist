@@ -266,6 +266,11 @@ function llmCard(ctx: UiContext, rerender: () => void): HTMLElement {
           modelSection,
         )
       : el('p', { class: 'dim' }, t('settings.llm.noneHint')),
+    selectField(t('settings.style'), s.suggestionStyle, [
+      { value: 'mixed', label: t('settings.style.mixed') },
+      { value: 'hooks', label: t('settings.style.hooks') },
+      { value: 'questions', label: t('settings.style.questions') },
+    ], value => ctx.settings.update({ suggestionStyle: value })),
     selectField(t('settings.suggestionLanguage'), s.suggestionLanguage, [
       { value: 'same', label: t('settings.suggestionLanguage.same') },
       ...CONVERSATION_LANGUAGES.map(code => ({ value: code, label: LANGUAGE_NATIVE_NAMES[code] })),

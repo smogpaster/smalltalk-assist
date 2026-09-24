@@ -9,6 +9,7 @@ import type { Suggestion, SuggestionKind } from '../core/types'
 const KIND_CODES: Record<string, SuggestionKind> = {
   q: 'question',
   r: 'reply',
+  a: 'hook',
   t: 'topic',
   x: 'exit',
   b: 'recall',

@@ -15,7 +15,10 @@ export interface TranscriptSegment {
   endMs: number
 }
 
-export type SuggestionKind = 'question' | 'reply' | 'topic' | 'exit' | 'recall' | 'term' | 'hint'
+export type SuggestionKind = 'question' | 'reply' | 'hook' | 'topic' | 'exit' | 'recall' | 'term' | 'hint'
+
+/** What the wearer wants to see: formulated replies, or only hooks and questions. */
+export type SuggestionStyle = 'mixed' | 'hooks' | 'questions'
 
 export interface Suggestion {
   kind: SuggestionKind

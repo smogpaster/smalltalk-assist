@@ -1,6 +1,6 @@
 import type { AudioInput } from '../audio/input'
 import { ProviderError, toProviderError } from '../core/errors'
-import type { Suggestion, TranscriptSegment } from '../core/types'
+import type { Suggestion, SuggestionStyle, TranscriptSegment } from '../core/types'
 import { trace } from '../diag/trace'
 import { clampPage } from '../display/layout'
 import { SuggestionEngine } from '../engine/engine'
@@ -13,6 +13,13 @@ import { SpeakerMapper } from '../speakers/mapper'
 import type { SttProvider, SttResult, SttSession } from '../stt/types'
 
 export type SessionPhase = 'idle' | 'starting' | 'recording' | 'quiet'
+
+/** Removes kinds the chosen style does not want (formulated replies, or everything but questions). */
+export function filterByStyle(suggestions: Suggestion[], style: SuggestionStyle): Suggestion[] {
+  if (style === 'mixed') return suggestions
+  if (style === 'hooks') return suggestions.filter(s => s.kind !== 'reply')
+  return suggestions.filter(s => s.kind !== 'reply' && s.kind !== 'hook')
+}
 
 /** Always ask for 3; the glasses show 1–3 at a time and the rest is one swipe away. */
 const SUGGESTIONS_PER_REQUEST = 3
@@ -306,8 +313,13 @@ export class ConversationSession {
       },
       // Quiet mode hides suggestions; don't pay for requests nobody sees.
       paused: () => this.phase === 'quiet',
-      onSuggestions: (suggestions, _partial, special) => {
+      style: () => this.deps.settings().suggestionStyle,
+      onSuggestions: (raw, _partial, special) => {
         if (generation !== this.generation) return
+        // Safety net (and demo mode): never show formulated replies when the
+        // wearer chose hooks or questions only.
+        const suggestions = special ? raw : filterByStyle(raw, this.deps.settings().suggestionStyle)
+        if (suggestions.length === 0) return
         if (special) this.hold()
         else if (Date.now() < this.holdUntil) {
           // Keep the explicitly requested answer on screen; show this later.

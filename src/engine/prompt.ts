@@ -1,4 +1,4 @@
-import type { TranscriptSegment } from '../core/types'
+import type { SuggestionStyle, TranscriptSegment } from '../core/types'
 import type { LlmRequest } from '../llm/types'
 import { formatForPrompt } from './transcript'
 
@@ -41,6 +41,8 @@ export interface PromptInput {
   withSpeakers: boolean
   context?: PromptContext
   features?: PromptFeatures
+  /** Default "mixed": reply ideas and questions. */
+  style?: SuggestionStyle
 }
 
 /** On-demand requests from the contextual menu or the lull detector. */
@@ -56,6 +58,27 @@ function contextLines(context: PromptContext | undefined): string[] {
   if (context.lines.length) out.push('Background (use only when it fits naturally, never recite it):', ...context.lines.map(l => `- ${l}`))
   if (context.avoid.length) out.push(`Never bring up or steer toward these topics: ${context.avoid.join('; ')}`)
   return out
+}
+
+/** Which kinds to produce, and how to help with a question from the partner. */
+function styleLines(style: SuggestionStyle): string[] {
+  switch (style) {
+    case 'mixed':
+      return [
+        'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
+        'If the partner\'s last line is a question, the first suggestion must be a short answer idea to exactly that question (kind "r").',
+      ]
+    case 'hooks':
+      return [
+        'Never write out what the wearer should say. Use only these kinds: "a" = a keyword hook of 2-6 words the wearer can pick up in their own words (a topic, detail or angle), "q" = a follow-up question to ask the other person.',
+        'If the partner\'s last line is a question, the first item must be kind "a": keywords the wearer could draw on to answer it – not a formulated answer.',
+      ]
+    case 'questions':
+      return [
+        'Use only kind "q": follow-up questions the wearer could ask the other person. Never write answers or statements for the wearer.',
+        'If the partner\'s last line is a question, the wearer answers it themselves; suggest questions that fit once they have answered.',
+      ]
+  }
 }
 
 function featureLines(features: PromptFeatures | undefined): string[] {
@@ -118,8 +141,7 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
     'You are a discreet small-talk helper. The wearer of smart glasses reads your suggestions at a glance during a live conversation.',
     `Suggest ${input.count} things the wearer could say next, written in ${language}.`,
     'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotation marks anywhere in the text; never repeat what was already said.',
-    'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
-    'If the partner\'s last line is a question, the first suggestion must be a short answer idea to exactly that question (kind "r").',
+    ...styleLines(input.style ?? 'mixed'),
     ...featureLines(input.features),
     ...contextLines(input.context),
     input.features?.names

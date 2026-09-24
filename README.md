@@ -115,6 +115,20 @@ A free-form base URL is not offered: the Even Hub network whitelist is fixed
 when the app is packed, so only these origins are reachable. All of them
 allow browser (CORS) calls (checked 2026-09-24).
 
+### What the suggestions are
+
+*Settings → AI suggestions → What should the suggestions be?*
+
+| Style | On the glasses |
+|---|---|
+| Reply ideas and questions (default) | ▶ a formulated reply idea, ? follow-up questions |
+| Keywords and questions | → 2–6-word hooks to pick up in your own words, ? questions – no ready-made replies |
+| Questions only | ? follow-up questions |
+
+When the other person asks something, the first item is a reply idea (default)
+or keywords to draw on (keywords style). The app also filters formulated
+replies client-side in the two restricted styles.
+
 ### How suggestions are triggered
 
 - the other person finished a sentence → wait *Pause* (default 0.9 s)
