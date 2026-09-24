@@ -227,8 +227,8 @@ npm run pack             # builds dist/ and creates smalltalk-assist.ehpk
 Upload the `.ehpk` in the Even Hub developer portal. Store texts
 (de/en/ja), permission texts and assets: `docs/store-listing.md` and `store/`
 (greyscale icon, background, simulator screenshots). Privacy policy drafts:
-`docs/privacy-policy.de.md`, `docs/privacy-policy.en.md` (fill placeholders,
-review, host publicly). Step-by-step: `docs/submission-checklist.md`.
+`docs/privacy-policy.de.md`, `docs/privacy-policy.en.md`, published with
+GitHub Pages (Settings → Pages → branch `main`, folder `/docs`). Step-by-step: `docs/submission-checklist.md`.
 
 Store screenshots can be recaptured with the dev-only URL parameters
 `?onboarded=1&demoLang=de|en|ja` (stripped from production builds) and the
@@ -240,3 +240,15 @@ No analytics, no conversation logging. Transcripts and suggestions exist only
 in memory and are discarded when a conversation ends. Settings and API keys
 are stored locally via the Even app's storage; each key is sent only to its
 own provider.
+
+## Support
+
+The app is free. `src/support.ts` holds the tip link (Ko-fi); while it is
+empty the "Support the app" card stays hidden. Because an Even Hub app cannot
+open the system browser, the card shows the address with a copy button and a
+QR code instead of a plain link. It appears on the home screen only while no
+conversation is running, and at the top of Settings.
+
+## License
+
+MIT, see `LICENSE`.

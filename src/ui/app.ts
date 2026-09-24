@@ -38,7 +38,7 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
       return
     }
     const page =
-      tab === 'home' ? renderHome(ctx, snapshot)
+      tab === 'home' ? renderHome(ctx, snapshot, rerender)
       : tab === 'profile' ? renderProfile(ctx, rerender)
       : tab === 'settings' ? renderSettings(ctx, rerender)
       : renderDiagnostics(ctx, rerender)

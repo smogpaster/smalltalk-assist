@@ -1,11 +1,12 @@
 import type { SessionSnapshot } from '../app/session'
 import type { MessageKey } from '../i18n'
 import type { UiContext } from './context'
+import { supportCard } from './supportCard'
 import { el } from './dom'
 
 const MAX_LINES = 40
 
-export function renderHome(ctx: UiContext, s: SessionSnapshot): HTMLElement {
+export function renderHome(ctx: UiContext, s: SessionSnapshot, rerender: () => void = () => {}): HTMLElement {
   const t = ctx.t()
   const active = s.phase !== 'idle'
   const view = ctx.glassesView()
@@ -71,5 +72,7 @@ export function renderHome(ctx: UiContext, s: SessionSnapshot): HTMLElement {
     el('div', { class: 'card' }, ...suggestions),
     el('h2', {}, t('ui.transcript')),
     el('div', { class: 'card' }, ...(lines.length ? lines : [el('p', { class: 'dim' }, t('ui.transcript.empty'))])),
+    // Only when idle: never distract during a conversation.
+    active ? null : supportCard(ctx, rerender, true),
   )
 }

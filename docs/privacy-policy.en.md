@@ -1,7 +1,5 @@
 # Privacy Policy – SmallTalk Assist
 
-> Ideally have this reviewed before publishing (see section 6).
-
 Last updated: 24 September 2026
 
 ## 1. Controller

@@ -2,6 +2,13 @@ import type { Messages } from './en'
 
 export const ja: Messages = {
   'app.title': 'SmallTalk Assist',
+  'support.section': '応援',
+  'support.title': 'アプリを応援する',
+  'support.body': 'SmallTalk Assist は無料・広告なしです。役に立ったら Ko-fi でチップをいただけるとうれしいです。',
+  'support.copy': 'リンクをコピー',
+  'support.copied': 'コピーしました',
+  'support.qr': 'QRコード',
+  'support.pasteHint': 'Safari にリンクを貼り付けてページを開いてください。',
   'glasses.setup': "先にスマホのEvenアプリで\n設定を完了してください。",
   'settings.section.cost': "費用の目安",
   'settings.section.data': "データ",

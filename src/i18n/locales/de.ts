@@ -2,6 +2,13 @@ import type { Messages } from './en'
 
 export const de: Messages = {
   'app.title': 'SmallTalk Assist',
+  'support.section': 'Unterstützen',
+  'support.title': 'App unterstützen',
+  'support.body': 'SmallTalk Assist ist kostenlos und ohne Werbung. Wenn dir die App hilft, freue ich mich über ein Trinkgeld über Ko-fi.',
+  'support.copy': 'Link kopieren',
+  'support.copied': 'Kopiert',
+  'support.qr': 'QR-Code',
+  'support.pasteHint': 'Füge den Link in Safari ein, um die Seite zu öffnen.',
   'glasses.setup': "Bitte zuerst die Einrichtung\nam Handy in der Even-App abschließen.",
   'settings.section.cost': "Kostenschätzung",
   'settings.section.data': "Daten",

@@ -34,5 +34,6 @@ npx evenhub pack app.json dist -o smalltalk-assist.ehpk -c   # also checks packa
 - [ ] Background image `store/background.png` (greyscale)
 - [ ] Screenshots from `store/screenshots/` (simulator captures)
 - [ ] Description, tagline, release notes per language from `docs/store-listing.md`
-- [ ] Privacy policy (`docs/privacy-policy.de.md` / `.en.md`): placeholders filled, reviewed, hosted at a public URL, covers every permission
+- [ ] Privacy policy URL: GitHub Pages from `/docs` → `https://<github-user>.github.io/<repo>/privacy-policy.en.html` (and `.de.html`); reviewed, covers every permission
+- [ ] Tip link set in `src/support.ts` (or left empty to hide the card)
 - [ ] Release notes: 1–3 lines, describe what the app does (first release)

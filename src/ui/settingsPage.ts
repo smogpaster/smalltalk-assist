@@ -9,6 +9,7 @@ import { EXTRA_IDS, type Settings } from '../settings/schema'
 import { CONVERSATION_LANGUAGES, LANGUAGE_NATIVE_NAMES, type ConversationLanguage } from '../stt/languages'
 import { STT_PROVIDERS, sttProviderInfo, type SttProviderId } from '../stt/registry'
 import type { UiContext } from './context'
+import { supportCard } from './supportCard'
 import { el, selectField } from './dom'
 
 const UI_LANGUAGE_NAMES: Record<string, string> = { de: 'Deutsch', en: 'English', ja: '日本語' }
@@ -28,9 +29,12 @@ export function renderSettings(ctx: UiContext, rerender: () => void): HTMLElemen
   const t = ctx.t()
   const s = ctx.settings.get()
 
+  const support = supportCard(ctx, rerender)
   return el(
     'div',
     {},
+    support ? el('h2', {}, t('support.section')) : null,
+    support,
     el('h2', {}, t('settings.section.conversation')),
     conversationCard(ctx),
     el('h2', {}, t('settings.section.stt')),

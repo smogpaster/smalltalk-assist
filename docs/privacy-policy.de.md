@@ -1,7 +1,5 @@
 # Datenschutzerklärung – SmallTalk Assist
 
-> Vor der Veröffentlichung am besten rechtlich prüfen lassen (siehe Abschnitt 6).
-
 Stand: 24.09.2026
 
 ## 1. Verantwortlicher
