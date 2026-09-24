@@ -53,6 +53,16 @@ export class ProfileStore {
     if (!this.data.profiles.some(p => p.id === this.data.activeId)) this.data.activeId = this.data.profiles[0].id
   }
 
+  /** Deletes all profiles and the conversation partner; recreates the starter profiles. */
+  async reset(defaults: DefaultProfileNames): Promise<void> {
+    if (this.saveTimer) clearTimeout(this.saveTimer)
+    this.saveTimer = null
+    await this.kv.remove(STORAGE_KEY)
+    this.data = { version: VERSION, activeId: '', profiles: [], person: { ...EMPTY_PERSON } }
+    await this.load(defaults)
+    await this.flush()
+  }
+
   list(): readonly Profile[] {
     return this.data.profiles
   }

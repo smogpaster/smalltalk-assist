@@ -5,6 +5,7 @@ import type { UiContext } from './context'
 import { renderDiagnostics } from './diagnosticsPage'
 import { el } from './dom'
 import { renderHome } from './homePage'
+import { renderOnboarding } from './onboardingPage'
 import { renderProfile } from './profilePage'
 import { renderSettings } from './settingsPage'
 import { injectStyles } from './styles'
@@ -32,6 +33,10 @@ export function mountUi(root: HTMLElement, ctx: UiContext): { refresh(): void } 
     document.documentElement.lang = ctx.settings.get().uiLanguage === 'auto' ? navigator.language : ctx.settings.get().uiLanguage
     const status = statusChip(snapshot, ctx)
     const rerender = () => schedule()
+    if (!ctx.settings.get().onboardingDone) {
+      root.replaceChildren(renderOnboarding(ctx, rerender))
+      return
+    }
     const page =
       tab === 'home' ? renderHome(ctx, snapshot)
       : tab === 'profile' ? renderProfile(ctx, rerender)

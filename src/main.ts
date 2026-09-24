@@ -3,7 +3,7 @@ import { createProvidersFactory } from './app/providers'
 import { ConversationSession } from './app/session'
 import { BridgeAudioInput } from './audio/input'
 import { connectBridge } from './bridge/connect'
-import { persistTrace, startRuntimeWatch, trace } from './diag/trace'
+import { deletePersistedTrace, persistTrace, startRuntimeWatch, trace } from './diag/trace'
 import { EventHub } from './bridge/hub'
 import { attachPreviewKeys, previewRenderBridge } from './bridge/preview'
 import { BridgeQueue } from './bridge/queue'
@@ -31,6 +31,15 @@ async function bootstrap() {
   const kv = bridge ? new BridgeKeyValueStore(bridge, queue) : new LocalKeyValueStore()
   const settings = new SettingsStore(kv)
   await settings.load()
+  // Dev builds only (stripped from production): lets the simulator produce
+  // store screenshots without clicking through the phone UI.
+  if (import.meta.env.DEV) {
+    const params = new URLSearchParams(location.search)
+    if (params.get('onboarded') === '1') settings.update({ onboardingDone: true })
+    const demoLang = params.get('demoLang')
+    if (demoLang === 'de' || demoLang === 'en' || demoLang === 'ja') settings.update({ demoLanguage: demoLang, mode: 'demo', uiLanguage: demoLang })
+    if (params.get('perPage') === '3') settings.update({ suggestionsPerPage: 3 })
+  }
   await persistTrace(kv)
   const keys = new KeyStore(kv)
   await keys.load([...STT_PROVIDERS.map(p => p.id), ...LLM_PROVIDERS.map(p => p.id)])
@@ -38,11 +47,12 @@ async function bootstrap() {
   let translate: Translate = translatorFor(settings.get())
   let uiLanguage = languageFor(settings.get())
   const profiles = new ProfileStore(kv)
-  await profiles.load({
+  const profileNames = () => ({
     networking: translate('profile.default.networking'),
     family: translate('profile.default.family'),
     client: translate('profile.default.client'),
   })
+  await profiles.load(profileNames())
 
   const hub = new EventHub()
   if (bridge) hub.attach(bridge)
@@ -75,6 +85,7 @@ async function bootstrap() {
     session,
     translate: () => translate,
     extras: () => settings.get().extras,
+    onboardingDone: () => settings.get().onboardingDone,
     onExit: shutdown,
   })
 
@@ -92,6 +103,14 @@ async function bootstrap() {
     glassesView: () => controller.view(),
     inEvenApp,
     audio,
+    resetAll: async () => {
+      await session.stop('reset')
+      for (const id of [...STT_PROVIDERS.map(p => p.id), ...LLM_PROVIDERS.map(p => p.id)]) await keys.remove(id)
+      await settings.reset()
+      await profiles.reset(profileNames())
+      await deletePersistedTrace(kv)
+      trace('settings', 'all data deleted')
+    },
     showOnGlasses: text => {
       if (text === null) controller.refresh()
       else void renderer.render({ ...controller.view(), header: 'DIAGNOSTICS', body: text })

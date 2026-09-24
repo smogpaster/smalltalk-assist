@@ -19,4 +19,6 @@ export interface UiContext {
   audio: AudioInput | null
   /** Temporarily shows raw text on the glasses; null restores the app view. */
   showOnGlasses(text: string | null): void
+  /** Deletes keys, profiles, settings and the diagnostics trace from this device. */
+  resetAll(): Promise<void>
 }

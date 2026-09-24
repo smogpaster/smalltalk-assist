@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#121212"/>
+  <g opacity="0.10" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round">
+    <path d="M880 120h240a44 44 0 0 1 44 44v120a44 44 0 0 1-44 44H976l-60 50v-50h-36a44 44 0 0 1-44-44V164a44 44 0 0 1 44-44z"/>
+    <path d="M760 400h220a44 44 0 0 1 44 44v100a44 44 0 0 1-44 44h-16v50l-60-50H760a44 44 0 0 1-44-44V444a44 44 0 0 1 44-44z"/>
+  </g>
+  <text x="96" y="330" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="96" font-weight="600" fill="#F2F2F2" letter-spacing="-2">SmallTalk Assist</text>
+  <text x="100" y="410" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="38" fill="#9A9A9A">Conversation hints on your G2</text>
+</svg>

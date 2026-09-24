@@ -42,6 +42,7 @@ describe('GlassesController gestures', () => {
       session,
       translate: () => createTranslator('de'),
       extras: () => DEFAULT_SETTINGS.extras,
+      onboardingDone: () => true,
       onExit: async () => {},
     })
     await renderer.init(controller.view())

@@ -5,11 +5,11 @@ conversation, transcribes it and shows short small-talk suggestions (questions
 and reply ideas) on the glasses. Bring your own API keys; transcripts and
 suggestions live only in memory.
 
-> Status: **milestone 7** – demo mode, glasses display, gestures, contextual
+> Status: **1.0.0 release candidate** (milestones 1–8) – demo mode, glasses display, gestures, contextual
 > menu, diagnostics, live speech-to-text (Soniox, Deepgram, Speechmatics,
 > Gladia), live AI suggestions (Claude, OpenAI, Gemini, Mistral and seven
 > OpenAI-compatible hosts), speaker mapping (me / other), profiles and
-> optional extras. Next: onboarding, privacy texts, store preparation (M8).
+> optional extras, onboarding with privacy notes, cost estimate.
 
 ## Requirements
 
@@ -175,6 +175,7 @@ src/
   engine/     transcript window, prompt, suggestion format, suggestion engine
   i18n/       de / en / ja catalogs (add a language = one file)
   llm/        LLM interface, SSE reader, adapters, provider registry
+  costs/      hourly cost estimate from dated list prices
   mock/       scripted demo conversations, mock STT and LLM
   profiles/   profiles, conversation partner, prompt context
   settings/   schema + migration, SDK key-value storage, API key store
@@ -182,16 +183,42 @@ src/
   stt/        STT interface, utterance assembler, adapters, provider registry
   ui/         phone screens
 tests/        Vitest unit tests
-docs/         platform notes
+docs/         platform notes, privacy policy drafts, store listing, submission checklist
+store/        greyscale icon, background, screenshots
 ```
 
-## Packaging
+## First start
+
+The phone shows a short onboarding (what the app does, where data goes, a
+neutral note on informing the other person, e.g. § 201 StGB in Germany – no
+legal advice). Until it is confirmed the glasses only say "finish the setup on
+your phone". *Settings → App* shows the notes again; *Settings → Data* deletes
+keys, profiles, settings and the diagnostics log.
+
+## Cost estimate
+
+*Settings → Cost estimate* shows a rough price per hour of conversation for
+the chosen providers and default models (providers' list prices, USD, dated;
+~120 AI requests per hour, capped by the pacing settings). Unknown prices
+(Speechmatics, OpenAI-compatible presets, non-default models) are shown as
+unknown instead of guessed. Prices live in `src/costs/estimate.ts`.
+
+## Packaging and submission
 
 ```bash
+npm test && npm run typecheck
 npm run pack             # builds dist/ and creates smalltalk-assist.ehpk
 ```
 
-Submission checklist and store texts follow in milestone 8.
+Upload the `.ehpk` in the Even Hub developer portal. Store texts
+(de/en/ja), permission texts and assets: `docs/store-listing.md` and `store/`
+(greyscale icon, background, simulator screenshots). Privacy policy drafts:
+`docs/privacy-policy.de.md`, `docs/privacy-policy.en.md` (fill placeholders,
+review, host publicly). Step-by-step: `docs/submission-checklist.md`.
+
+Store screenshots can be recaptured with the dev-only URL parameters
+`?onboarded=1&demoLang=de|en|ja` (stripped from production builds) and the
+simulator's `/api/screenshot/glasses`.
 
 ## Privacy
 

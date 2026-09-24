@@ -1,5 +1,6 @@
 import type { ProviderError } from '../core/errors'
 import { toProviderError } from '../core/errors'
+import { PRICES_DATE, estimateHourlyCost, formatUsd } from '../costs/estimate'
 import { trace } from '../diag/trace'
 import { UI_LANGUAGES, type MessageKey } from '../i18n'
 import { LLM_PROVIDERS, llmProviderInfo, type LlmProviderId } from '../llm/registry'
@@ -20,6 +21,7 @@ const state = {
   test: {} as Record<string, TestState>,
   models: {} as Record<string, string[] | 'pending' | ProviderError>,
   showAdvancedStt: false,
+  resetArmed: false,
 }
 
 export function renderSettings(ctx: UiContext, rerender: () => void): HTMLElement {
@@ -37,6 +39,8 @@ export function renderSettings(ctx: UiContext, rerender: () => void): HTMLElemen
     llmCard(ctx, rerender),
     el('h2', {}, t('settings.section.extras')),
     extrasCard(ctx),
+    el('h2', {}, t('settings.section.cost')),
+    costCard(ctx),
     el('h2', {}, t('settings.section.app')),
     el(
       'div',
@@ -45,7 +49,53 @@ export function renderSettings(ctx: UiContext, rerender: () => void): HTMLElemen
         { value: 'auto', label: t('ui.language.auto') },
         ...UI_LANGUAGES.map(code => ({ value: code, label: UI_LANGUAGE_NAMES[code] ?? code })),
       ], value => ctx.settings.update({ uiLanguage: value })),
+      el('button', { class: 'btn secondary', on: { click: () => ctx.settings.update({ onboardingDone: false }) } }, t('settings.showOnboarding')),
     ),
+    el('h2', {}, t('settings.section.data')),
+    el(
+      'div',
+      { class: 'card' },
+      el('p', { class: 'dim' }, t('settings.data.intro')),
+      el('button', {
+        class: state.resetArmed ? 'btn danger' : 'btn secondary',
+        disabled: ctx.session.isActive,
+        on: {
+          click: async () => {
+            if (!state.resetArmed) {
+              state.resetArmed = true
+              rerender()
+              return
+            }
+            state.resetArmed = false
+            await ctx.resetAll()
+            rerender()
+          },
+        },
+      }, state.resetArmed ? t('settings.data.confirm') : t('settings.data.delete')),
+    ),
+  )
+}
+
+// ---- Cost estimate ----------------------------------------------------------------
+
+function costCard(ctx: UiContext): HTMLElement {
+  const t = ctx.t()
+  const s = ctx.settings.get()
+  const locale = document.documentElement.lang || 'en'
+  const estimate = estimateHourlyCost(s)
+  const money = (v: number | null) => (v === null ? t('cost.unknown') : formatUsd(v, locale))
+  const date = new Date(PRICES_DATE).toLocaleDateString(locale)
+
+  if (s.mode === 'demo') return el('div', { class: 'card' }, el('p', { class: 'dim' }, t('cost.demo')))
+  return el(
+    'div',
+    { class: 'card' },
+    el('p', {}, el('strong', {}, estimate.total === null ? t('cost.totalUnknown') : t('cost.total', { amount: money(estimate.total) }))),
+    el('div', { class: 'stats' },
+      el('span', {}, t('settings.section.stt')), el('span', {}, s.sttProvider ? money(estimate.stt) : '–'),
+      el('span', {}, t('settings.section.llm')), el('span', {}, s.llmProvider ? money(estimate.llm) : '–'),
+    ),
+    el('p', { class: 'dim', style: 'margin-top:8px' }, t('cost.assumptions', { requests: estimate.requestsPerHour, date })),
   )
 }
 

@@ -5,6 +5,28 @@
  */
 export const en = {
   'app.title': 'SmallTalk Assist',
+  'glasses.setup': "Please finish the setup\non your phone in the Even app first.",
+  'settings.section.cost': "Cost estimate",
+  'settings.section.data': "Data",
+  'settings.showOnboarding': "Show the privacy notes again",
+  'settings.data.intro': "Deletes API keys, profiles, conversation-partner info, settings and the diagnostics log from this phone.",
+  'settings.data.delete': "Delete all data",
+  'settings.data.confirm': "Really delete everything?",
+  'cost.total': "≈ {amount} per hour of conversation",
+  'cost.totalUnknown': "No complete price is available for this selection.",
+  'cost.unknown': "unknown",
+  'cost.demo': "Demo mode is free – no providers are used.",
+  'cost.assumptions': "Rough estimate, no guarantee: providers' list prices (as of {date}, USD), a lively conversation with about {requests} AI requests per hour. Actual costs depend on how much is said, the model and the provider.",
+  'onboarding.title': "Welcome to SmallTalk Assist",
+  'onboarding.what': "SmallTalk Assist listens to your conversation and shows short suggestions on your glasses: questions you could ask and ideas for replies.",
+  'onboarding.data.title': "Where your data goes",
+  'onboarding.data.body': "During a conversation, audio is streamed to the speech-recognition provider you chose and the text of the last minutes is sent to the AI provider you chose – each with your own API key. SmallTalk Assist runs no servers of its own. Transcripts and suggestions are not stored and are discarded when the conversation ends. There are no analytics or tracking services. Settings, profiles and API keys stay on this phone. The providers' own privacy policies apply to their processing.",
+  'onboarding.consent.title': "The people you talk to",
+  'onboarding.consent.body': "Let the people you talk to know that their words are transcribed and sent to third parties. Recording or transmitting privately spoken words may be regulated by law – in Germany, for example, by Section 201 of the Criminal Code (violation of the confidentiality of the spoken word). Please check which rules apply to you. This note is not legal advice.",
+  'onboarding.start.title': "Getting started",
+  'onboarding.start.body': "Try demo mode first – no microphone, no keys. For real conversations, choose a speech-recognition and an AI provider in Settings and enter your own API keys.",
+  'onboarding.check': "I have read these notes and will inform the people I talk to.",
+  'onboarding.continue': "Let’s go",
 
   // Glasses
   'glasses.idle': 'Tap to start a conversation.\nDouble-tap: exit',

@@ -40,6 +40,8 @@ export interface GlassesViewState {
   reconnecting?: boolean
   /** Short local hint above the suggestions (e.g. talk share). */
   hint?: string
+  /** First-run setup on the phone is not done yet. */
+  needsSetup?: boolean
 }
 
 export interface GlassesMenuItem {
@@ -90,6 +92,7 @@ function buildBody(state: GlassesViewState, t: Translate, page: number, perPage:
   const error = state.error
     ? fitLines(sanitizeForGlasses(t('glasses.error', { message: state.error })), BODY_INNER_WIDTH, 3)
     : ''
+  if (state.phase === 'idle' && state.needsSetup) return t('glasses.setup')
   if (state.phase === 'idle') return error ? `${error}\n\n${t('glasses.idle')}` : t('glasses.idle')
   if (state.phase === 'quiet') return t('glasses.quiet')
   if (error) return error

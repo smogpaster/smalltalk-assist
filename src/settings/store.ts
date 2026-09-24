@@ -42,6 +42,15 @@ export class SettingsStore {
     return this.get()
   }
 
+  /** Back to defaults (incl. onboarding), written immediately. */
+  async reset(): Promise<void> {
+    if (this.saveTimer) clearTimeout(this.saveTimer)
+    this.saveTimer = null
+    this.current = { ...DEFAULT_SETTINGS }
+    await this.persist()
+    for (const listener of this.listeners) listener(this.get())
+  }
+
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)

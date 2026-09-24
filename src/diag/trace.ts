@@ -62,6 +62,15 @@ export async function persistTrace(kv: KeyValueStore): Promise<void> {
   save()
 }
 
+/** Forgets the current and earlier runs, in memory and in storage. */
+export async function deletePersistedTrace(kv: KeyValueStore): Promise<void> {
+  entries.length = 0
+  previousRuns = []
+  dirty = false
+  await kv.remove(PERSIST_KEY).catch(() => undefined)
+  for (const listener of listeners) listener()
+}
+
 export function traceEntries(): readonly string[] {
   return entries
 }

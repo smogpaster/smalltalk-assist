@@ -19,6 +19,8 @@ export interface GlassesControllerDeps {
   translate: () => Translate
   /** Enabled extras (menu items, hints). */
   extras: () => Extras
+  /** First-run notes confirmed on the phone; until then nothing starts. */
+  onboardingDone: () => boolean
   /** Stop hardware and flush state; the WebView is about to close. */
   onExit(): Promise<void>
 }
@@ -80,6 +82,7 @@ export class GlassesController {
         error: s.error ? this.deps.translate()(`error.${s.error.kind}`) : undefined,
         preview: s.transcriptOnly ? s.transcript.at(-1)?.text : undefined,
         reconnecting: s.reconnecting,
+        needsSetup: !this.deps.onboardingDone(),
         hint: s.talkShareWarning !== null ? this.deps.translate()('extra.talkShare.hint', { pct: s.talkShareWarning }) : undefined,
       },
       this.deps.translate(),
@@ -183,6 +186,7 @@ export class GlassesController {
       return
     }
     if (session.isActive) await session.stop(reason)
+    else if (!this.deps.onboardingDone()) trace('glasses', 'start blocked: onboarding not done')
     else await session.start(reason)
   }
 
