@@ -8,7 +8,7 @@ export const ja: Messages = {
   'support.copy': 'リンクをコピー',
   'support.copied': 'コピーしました',
   'support.qr': 'QRコード',
-  'support.pasteHint': 'Safari にリンクを貼り付けてページを開いてください。',
+  'support.pasteHint': 'ブラウザにリンクを貼り付けてページを開いてください。',
   'glasses.setup': "先にスマホのEvenアプリで\n設定を完了してください。",
   'settings.section.cost': "費用の目安",
   'settings.section.data': "データ",

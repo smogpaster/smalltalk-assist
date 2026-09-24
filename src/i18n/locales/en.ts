@@ -11,7 +11,7 @@ export const en = {
   'support.copy': 'Copy link',
   'support.copied': 'Copied',
   'support.qr': 'QR code',
-  'support.pasteHint': 'Paste the link into Safari to open the page.',
+  'support.pasteHint': 'Paste the link into a browser to open the page.',
   'glasses.setup': "Please finish the setup\non your phone in the Even app first.",
   'settings.section.cost': "Cost estimate",
   'settings.section.data': "Data",
