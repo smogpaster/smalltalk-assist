@@ -243,8 +243,11 @@ own provider.
 
 ## Support
 
-The app is free. `src/support.ts` holds the tip link (Ko-fi); while it is
-empty the "Support the app" card stays hidden. Because an Even Hub app cannot
+The app is free. If it helps you, tips are welcome at
+[ko-fi.com/smogpaster](https://ko-fi.com/smogpaster).
+
+`src/support.ts` holds the tip link; while it is empty the "Support the app"
+card stays hidden. Because an Even Hub app cannot
 open the system browser, the card shows the address with a copy button and a
 QR code instead of a plain link. It appears on the home screen only while no
 conversation is running, and at the top of Settings.
