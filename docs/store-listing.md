@@ -8,7 +8,7 @@ Assets in `store/` (all greyscale, checked):
 | `icon-background.png` | icon background (solid) |
 | `icon.png` / `icon-1024.png` | composed icon, for previews |
 | `background.png` (1280×720) | store background image |
-| `screenshots/*.png` (576×288) | captured with the simulator's screenshot API, demo mode |
+| `screenshots/*.png` (576×288) | English, captured with the simulator's screenshot API, demo mode |
 
 The portal did not document pixel sizes; SVG sources are next to the PNGs, so
 other sizes are one `rsvg-convert -w <n> -h <n>` away.
