@@ -69,12 +69,26 @@ describe('GlassesController gestures', () => {
     expect(session.snapshot().phase).toBe('idle')
   })
 
-  it('long press alone toggles quiet mode', async () => {
+  it('long press alone does nothing (it is usually the menu gesture)', async () => {
     hub.emit({ type: 'tap', source: 'ring' })
     await vi.advanceTimersByTimeAsync(500)
     hub.emit({ type: 'longPress', source: 'ring' })
     await vi.advanceTimersByTimeAsync(10)
+    expect(session.snapshot().phase).toBe('recording')
+  })
+
+  it('a tap in quiet mode shows suggestions again instead of stopping', async () => {
+    hub.emit({ type: 'menu', itemId: MenuId.toggleSession })
+    await vi.advanceTimersByTimeAsync(10)
+    hub.emit({ type: 'menu', itemId: MenuId.quiet })
+    await vi.advanceTimersByTimeAsync(10)
     expect(session.snapshot().phase).toBe('quiet')
+    hub.emit({ type: 'tap', source: 'ring' })
+    await vi.advanceTimersByTimeAsync(500)
+    expect(session.snapshot().phase).toBe('recording')
+    hub.emit({ type: 'tap', source: 'ring' })
+    await vi.advanceTimersByTimeAsync(500)
+    expect(session.isActive).toBe(false)
   })
 
   it('handles menu items', async () => {

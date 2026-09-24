@@ -5,7 +5,7 @@ export const ja: Messages = {
 
   'glasses.idle': 'タップで会話を開始\nダブルタップで終了',
   'glasses.listening': '聞き取り中…',
-  'glasses.quiet': 'サイレント – 長押しで表示',
+  'glasses.quiet': 'サイレント – タップで表示',
   'glasses.rec': '● REC',
   'glasses.paused': '○ 休止',
   'glasses.ready': '○ 待機',

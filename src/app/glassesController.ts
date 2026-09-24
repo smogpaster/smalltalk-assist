@@ -27,15 +27,17 @@ export interface GlassesControllerDeps {
  * Maps glasses gestures to session actions and keeps the glasses display in
  * sync with the session.
  *
- * Gestures (approved mapping):
- *   tap          start / stop the conversation
+ * Gestures:
+ *   tap          start / stop the conversation; in quiet mode: show suggestions again
  *   swipe        page through suggestions
- *   long press   quiet mode on/off
  *   double tap   system exit dialog (Even Hub requirement on the root page)
- *   tap + long press   OS contextual menu (start/stop, quiet, later extras)
+ *   tap + long press   OS contextual menu (start/stop, quiet mode, extras)
  *
- * Because the menu gesture begins with a tap, a tap is only acted on after a
- * short grace period without a following long press.
+ * A long press alone does nothing: on hardware the menu gesture often reaches
+ * the app as a bare long press (the tap is swallowed), so binding quiet mode
+ * to it toggled quiet mode every time the menu was opened. Because the menu
+ * gesture may begin with a tap, a tap is only acted on after a short grace
+ * period without a following long press.
  */
 const TAP_GRACE_MS = 450
 
@@ -112,9 +114,7 @@ export class GlassesController {
         if (this.pendingTap && Date.now() - this.pendingTapAt < TAP_GRACE_MS * 2) {
           this.cancelPendingTap()
           trace('glasses', 'tap + long press: menu gesture')
-          return
         }
-        session.toggleQuiet()
         return
       case 'doubleTap':
         this.exitDialogOpen = true
@@ -177,6 +177,11 @@ export class GlassesController {
 
   private async toggleSession(reason: string): Promise<void> {
     const session = this.deps.session
+    // A tap in quiet mode brings the suggestions back instead of ending the conversation.
+    if (session.snapshot().phase === 'quiet' && reason.startsWith('tap')) {
+      session.toggleQuiet()
+      return
+    }
     if (session.isActive) await session.stop(reason)
     else await session.start(reason)
   }

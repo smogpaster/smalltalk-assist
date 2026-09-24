@@ -62,10 +62,13 @@ The app loads on your G2.
 
 | Gesture (temple or R1 ring) | Action |
 |---|---|
-| Tap | start / stop the conversation |
+| Tap | start / stop the conversation (in quiet mode: show suggestions again) |
 | Swipe up / down | page through suggestions |
-| Long press | quiet mode on / off |
+| Tap, then long press | menu: start/stop, quiet mode, enabled extras, back |
 | Double tap | exit dialog |
+
+A long press alone does nothing: on the device the menu gesture often reaches
+the app as a bare long press, so it cannot double as a quiet-mode toggle.
 
 **Demo mode** (default) plays a scripted conversation in German, English or
 Japanese – no microphone, no keys, no network. Switch it in *Settings*.

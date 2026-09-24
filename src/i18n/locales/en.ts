@@ -9,7 +9,7 @@ export const en = {
   // Glasses
   'glasses.idle': 'Tap to start a conversation.\nDouble-tap: exit',
   'glasses.listening': 'Listening…',
-  'glasses.quiet': 'Quiet mode – long-press to show suggestions',
+  'glasses.quiet': 'Quiet mode – tap to show suggestions',
   'glasses.rec': '● REC',
   'glasses.paused': '○ Quiet',
   'glasses.ready': '○ Ready',

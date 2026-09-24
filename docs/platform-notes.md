@@ -57,6 +57,8 @@ even-g2-notes, even-hub-devguide, and our own tests. Last checked 2026-09-24.
 
 ## Contextual menu (SDK ≥ 0.0.14, docs /docs/build/contextual-menu)
 - Opened by the OS with **tap, then long press** → our tap handler waits ~450 ms.
+  On the device the tap is often swallowed and only a bare long press (9/10)
+  reaches the app before FOREGROUND_ENTER – never bind an action to long press.
 - ≤ 10 items, ≤ 32 UTF-8 bytes each; system items (display off, brightness,
   close app) are added by the OS.
 - Sequence: FOREGROUND_ENTER → menuItemClickEvent → FOREGROUND_EXIT; the page

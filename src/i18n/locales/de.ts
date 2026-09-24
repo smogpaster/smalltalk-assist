@@ -5,7 +5,7 @@ export const de: Messages = {
 
   'glasses.idle': 'Tippen: Gespräch starten\nDoppeltippen: Beenden',
   'glasses.listening': 'Höre zu…',
-  'glasses.quiet': 'Ruhemodus – lang drücken zum Einblenden',
+  'glasses.quiet': 'Ruhemodus – tippen zum Einblenden',
   'glasses.rec': '● REC',
   'glasses.paused': '○ Ruhe',
   'glasses.ready': '○ Bereit',
