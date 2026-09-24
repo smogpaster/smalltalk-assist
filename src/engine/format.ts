@@ -28,10 +28,10 @@ export function encodeSuggestions(suggestions: readonly Suggestion[]): string {
  * Parses a complete model answer. Tolerates code fences, prose around the
  * JSON, long kind names and a bare array. Drops empty or malformed items.
  */
-export function parseSuggestions(output: string): Suggestion[] {
+export function parseSuggestions(output: string, forcedKind?: SuggestionKind): Suggestion[] {
   const json = extractJson(output)
   // Invalid JSON (typically an unescaped quote inside a text): read the items one by one.
-  if (json === undefined) return looseItems(output)
+  if (json === undefined) return looseItems(output, forcedKind)
   const list = Array.isArray(json) ? json : (json as { s?: unknown; suggestions?: unknown }).s ?? (json as { suggestions?: unknown }).suggestions
   if (!Array.isArray(list)) return []
 
@@ -40,7 +40,8 @@ export function parseSuggestions(output: string): Suggestion[] {
     if (!item || typeof item !== 'object') continue
     const rec = item as Record<string, unknown>
     const text = typeof rec.t === 'string' ? rec.t : typeof rec.text === 'string' ? rec.text : ''
-    const kind = toKind(rec.k ?? rec.kind)
+    // For on-demand requests the kind is known; models sometimes number items in "k".
+    const kind = forcedKind ?? toKind(rec.k ?? rec.kind)
     if (text.trim() && kind) result.push({ kind, text: text.trim() })
   }
   return result
@@ -93,16 +94,16 @@ export function parseNames(output: string): NameNote[] {
   return out
 }
 
-const ITEM = /\{\s*"k"\s*:\s*"([a-z]+)"\s*,\s*"t"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g
+const ITEM = /\{\s*"k"\s*:\s*"([a-z0-9]+)"\s*,\s*"t"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g
 
 /**
  * Extracts the suggestions that are already complete in a partially streamed
  * answer, so the first one can be shown before the model has finished.
  */
-export function parsePartialSuggestions(partial: string): Suggestion[] {
+export function parsePartialSuggestions(partial: string, forcedKind?: SuggestionKind): Suggestion[] {
   const result: Suggestion[] = []
   for (const match of partial.matchAll(ITEM)) {
-    const kind = toKind(match[1])
+    const kind = forcedKind ?? toKind(match[1])
     let text: string
     try {
       text = JSON.parse(`"${match[2]}"`) as string
@@ -112,7 +113,7 @@ export function parsePartialSuggestions(partial: string): Suggestion[] {
     if (kind && text.trim()) result.push({ kind, text: text.trim() })
   }
   // Nothing strict matched: fall back to the tolerant reader on closed objects.
-  return result.length ? result : looseItems(partial)
+  return result.length ? result : looseItems(partial, forcedKind)
 }
 
 /**
@@ -121,11 +122,11 @@ export function parsePartialSuggestions(partial: string): Suggestion[] {
  * the end of the object (or before a following "k" key), so stray quotes
  * inside the text survive.
  */
-export function looseItems(text: string): Suggestion[] {
+export function looseItems(text: string, forcedKind?: SuggestionKind): Suggestion[] {
   const result: Suggestion[] = []
   for (const match of text.matchAll(/\{[^{}]*\}/g)) {
     const object = match[0]
-    const kind = toKind(object.match(/"k"\s*:\s*"([a-z]+)"/i)?.[1])
+    const kind = forcedKind ?? toKind(object.match(/"k"\s*:\s*"([a-z]+)"/i)?.[1])
     const start = object.match(/"t"\s*:\s*"/)
     if (!kind || !start || start.index === undefined) continue
     let rest = object.slice(start.index + start[0].length)

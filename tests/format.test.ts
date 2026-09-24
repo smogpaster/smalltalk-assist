@@ -61,3 +61,16 @@ describe('tolerant parsing', () => {
     expect(outline('{"s":[{"k":"x","t":"Geheimer Inhalt"}]}')).toBe('{~1:[{"k":"x","t":~15}]}'.replace('~1', '"s"'))
   })
 })
+
+describe('forced kind for on-demand answers', () => {
+  it('keeps items whose "k" is a number (seen on device for exit lines)', async () => {
+    const { parseSuggestions, parsePartialSuggestions } = await import('../src/engine/format')
+    const answer = '```json\n{ "s": [ { "k": "1", "t": "Ich muss leider weiter." }, { "k": "2", "t": "Lass uns bald wieder sprechen!" } ] }\n```'
+    expect(parseSuggestions(answer)).toEqual([])
+    expect(parseSuggestions(answer, 'exit')).toEqual([
+      { kind: 'exit', text: 'Ich muss leider weiter.' },
+      { kind: 'exit', text: 'Lass uns bald wieder sprechen!' },
+    ])
+    expect(parsePartialSuggestions(answer.slice(0, answer.indexOf('},') + 1), 'exit')).toEqual([{ kind: 'exit', text: 'Ich muss leider weiter.' }])
+  })
+})

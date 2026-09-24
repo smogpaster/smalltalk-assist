@@ -1,5 +1,5 @@
 import { toProviderError, type ProviderError } from '../core/errors'
-import type { Suggestion, TranscriptSegment } from '../core/types'
+import type { Suggestion, SuggestionKind, TranscriptSegment } from '../core/types'
 import { trace } from '../diag/trace'
 import type { LlmProvider } from '../llm/types'
 import { outline, parseNames, parsePartialSuggestions, parseSuggestions, type NameNote } from './format'
@@ -133,7 +133,7 @@ export class SuggestionEngine {
       context: this.options.context?.(),
     })
     this.limiter.record(this.now())
-    void this.run(request, kind, false, true)
+    void this.run(request, kind, false, SPECIAL_KIND[kind])
   }
 
   stop(): void {
@@ -221,10 +221,12 @@ export class SuggestionEngine {
       context: this.options.context?.(),
       features,
     })
-    await this.run(request, reason, features?.names === true, false)
+    await this.run(request, reason, features?.names === true, null)
   }
 
-  private async run(request: ReturnType<typeof buildSuggestionRequest>, reason: string, wantsNames: boolean, special: boolean): Promise<void> {
+  /** `forcedKind` set = explicit request whose answers all get that kind. */
+  private async run(request: ReturnType<typeof buildSuggestionRequest>, reason: string, wantsNames: boolean, forcedKind: SuggestionKind | null): Promise<void> {
+    const special = forcedKind !== null
     this.inFlight?.abort()
     const controller = new AbortController()
     this.inFlight = controller
@@ -241,7 +243,7 @@ export class SuggestionEngine {
         chunk => {
           if (controller.signal.aborted) return
           streamed += chunk
-          const partial = parsePartialSuggestions(streamed)
+          const partial = parsePartialSuggestions(streamed, forcedKind ?? undefined)
           if (partial.length > shown) {
             shown = partial.length
             firstAt ??= this.now() - started
@@ -250,7 +252,7 @@ export class SuggestionEngine {
         },
       )
       if (controller.signal.aborted || this.stopped) return
-      const suggestions = parseSuggestions(output)
+      const suggestions = parseSuggestions(output, forcedKind ?? undefined)
       trace('engine', 'response', { ms: this.now() - started, firstMs: firstAt, chars: output.length, suggestions: suggestions.length })
       if (suggestions.length > 0) this.options.onSuggestions(suggestions, false, special)
       else trace('engine', 'unparseable answer', { chars: output.length, shape: outline(output) })
@@ -268,6 +270,9 @@ export class SuggestionEngine {
     }
   }
 }
+
+/** What each on-demand request produces, independent of what the model writes in "k". */
+const SPECIAL_KIND: Record<SpecialKind, SuggestionKind> = { topic: 'topic', exit: 'exit', recap: 'hint', lull: 'topic' }
 
 /** Ends with a question mark (Latin or full-width) or Japanese question particle. */
 export function isQuestion(text: string): boolean {

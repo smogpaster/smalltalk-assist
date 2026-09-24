@@ -95,7 +95,7 @@ export function buildSpecialRequest(kind: SpecialKind, input: Omit<PromptInput, 
     special.task(count),
     `Write in ${languageName(input.outputLanguage)}. Each item at most 14 words, no emoji, no quotation marks in the text.`,
     ...contextLines(input.context),
-    `Answer ONLY with compact JSON: {"s":[{"k":"${special.kind}","t":"..."}]}`,
+    `Answer ONLY with compact JSON: {"s":[{"k":"${special.kind}","t":"..."}]} – "k" is always "${special.kind}", do not number the items.`,
   ].join('\n')
   const parts: string[] = []
   if (input.withSpeakers) parts.push('Speakers: ME = wearer, THEM = conversation partner, ? = unknown.')
