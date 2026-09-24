@@ -91,7 +91,7 @@ connection test shows whether your account can use them.
 
 Not included: AssemblyAI and Google Cloud STT (no browser-compatible
 streaming auth without a server). OpenAI Realtime and Mistral Voxtral are
-planned as a second step.
+not part of v1.
 
 ## AI (LLM) providers
 
@@ -129,16 +129,16 @@ src/
   app/        session state machine, glasses controller, provider selection
   audio/      microphone via the Even bridge
   bridge/     bridge connection, serialized call queue, event normalizer, preview
-  core/       shared types, provider errors, privacy-safe debug log
-  diag/       keyless hardware checks
+  core/       shared types, provider errors
+  diag/       keyless hardware checks, privacy-safe event trace
   display/    glasses layout, glyph sanitizing, pixel-accurate text fitting, renderer
   engine/     transcript window, prompt, suggestion format, suggestion engine
   i18n/       de / en / ja catalogs (add a language = one file)
-  llm/        LLM provider interface (adapters in M4)
+  llm/        LLM interface, SSE reader, adapters, provider registry
   mock/       scripted demo conversations, mock STT and LLM
-  settings/   schema + migration, SDK key-value storage
+  settings/   schema + migration, SDK key-value storage, API key store
   speakers/   diarization label → self/other
-  stt/        STT provider interface (adapters in M3)
+  stt/        STT interface, utterance assembler, adapters, provider registry
   ui/         phone screens
 tests/        Vitest unit tests
 docs/         platform notes
@@ -155,5 +155,6 @@ Submission checklist and store texts follow in milestone 8.
 ## Privacy
 
 No analytics, no conversation logging. Transcripts and suggestions exist only
-in memory and are discarded when a conversation ends. Settings (and later API
-keys) are stored locally via the Even app's storage.
+in memory and are discarded when a conversation ends. Settings and API keys
+are stored locally via the Even app's storage; each key is sent only to its
+own provider.
