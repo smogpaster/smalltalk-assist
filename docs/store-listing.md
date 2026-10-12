@@ -51,11 +51,9 @@ zeigt eine Kostenschätzung pro Gesprächsstunde.
 Datenschutz: keine eigenen Server, keine Analyse. Transkripte und Vorschläge
 werden nicht gespeichert. Bitte informiere dein Gegenüber.
 
-**Release Notes 1.1.0:** Statt fertiger Sätze zeigt die App jetzt nur noch
-kurze Themen-Stichworte – du sprichst in deinen eigenen Worten.
-
-**Release Notes 1.0.0:** Live-Gesprächsvorschläge auf der G2 mit eigenen
-Spracherkennungs- und KI-Keys, Profilen und optionalen Zusatzfunktionen.
+**Release Notes 1.1.0 (erste Veröffentlichung):** Live-Themenvorschläge als
+kurze Stichworte auf der G2 – mit eigenen Spracherkennungs- und KI-Keys,
+Profilen und optionalen Zusatzfunktionen.
 
 ## English
 
@@ -85,11 +83,9 @@ per hour of conversation.
 Privacy: no servers of our own, no analytics. Transcripts and suggestions are
 not stored. Please tell the people you talk to.
 
-**Release notes 1.1.0:** Instead of ready-made sentences the app now shows
-short topic keywords only – you talk in your own words.
-
-**Release notes 1.0.0:** Live conversation suggestions on the G2 with your own
-speech and AI keys, profiles and optional extras.
+**Release notes 1.1.0 (first release):** Live topic suggestions as short
+keywords on the G2 – with your own speech and AI keys, profiles and optional
+extras.
 
 ## 日本語
 
@@ -117,11 +113,8 @@ AI（Claude、OpenAI、Gemini、Mistral、OpenAI互換）を選べます。1時�
 プライバシー：独自サーバーなし、分析なし。文字起こしと提案は保存されません。
 会話の相手にお知らせください。
 
-**リリースノート 1.1.0：** 完成した文章の代わりに、短い話題のキーワードだけを
-表示するようになりました。話すのはあなた自身の言葉です。
-
-**リリースノート 1.0.0：** 自分の音声認識・AIキーで使える、G2向けリアルタイム
-会話提案。プロフィールと追加機能付き。
+**リリースノート 1.1.0（初回リリース）：** 自分の音声認識・AIキーで使える、
+G2向けのリアルタイム話題キーワード。プロフィールと追加機能付き。
 
 ---
 
