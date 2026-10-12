@@ -1,11 +1,11 @@
 # SmallTalk Assist
 
 Conversation helper for **Even Realities G2** smart glasses. It listens to a
-conversation, transcribes it and shows short small-talk suggestions (questions
-and reply ideas) on the glasses. Bring your own API keys; transcripts and
+conversation, transcribes it and shows short topic keywords on the glasses –
+things you could bring up, in your own words. Bring your own API keys; transcripts and
 suggestions live only in memory.
 
-> Status: **1.0.0 release candidate** (milestones 1–8) – demo mode, glasses display, gestures, contextual
+> Status: **1.1.0** (topic keywords instead of sentences) – demo mode, glasses display, gestures, contextual
 > menu, diagnostics, live speech-to-text (Soniox, Deepgram, Speechmatics,
 > Gladia), live AI suggestions (Claude, OpenAI, Gemini, Mistral and seven
 > OpenAI-compatible hosts), speaker mapping (me / other), profiles and
@@ -117,17 +117,13 @@ allow browser (CORS) calls (checked 2026-09-24).
 
 ### What the suggestions are
 
-*Settings → AI suggestions → What should the suggestions be?*
-
-| Style | On the glasses |
-|---|---|
-| Reply ideas and questions (default) | ▶ a formulated reply idea, ? follow-up questions |
-| Keywords and questions | → 2–6-word hooks to pick up in your own words, ? questions – no ready-made replies |
-| Questions only | ? follow-up questions |
-
-When the other person asks something, the first item is a reply idea (default)
-or keywords to draw on (keywords style). The app also filters formulated
-replies client-side in the two restricted styles.
+Topic keywords only (since 1.1.0): `→` plus 2–5 words (CJK: up to 12
+characters) that the wearer can bring up in their own words – no sentences to
+read out, no ready-made questions. When the other person asks something, the
+first topic is keywords to draw on for the answer. The extras follow the same
+rule (new topic, polite exit, lull, callbacks); only the recap and the term
+explainer are short sentences. Kinds a model still sends as questions (`q`) or
+replies (`r`) are dropped by the parser.
 
 ### How suggestions are triggered
 
@@ -164,13 +160,13 @@ the wearer's own sentence only after ~4 s of silence.
 
 | Extra | How it works | Cost |
 |---|---|---|
-| ☰ Change topic | menu item → 2 transitions to a new topic fitting the profile | 1 request |
+| ☰ Change topic | menu item → 2 new topics fitting the profile | 1 request |
 | ☰ Remember names | names from introductions, returned alongside suggestions; menu shows them | slightly longer requests |
 | Talk share hint | local: your share of speaking time over 5 min; hint above 70 % (clears below 60 %) | none |
-| Lull detection | after 15 s without speech, 2 openers | 1 request per lull |
-| Callbacks | one suggestion may pick up an earlier point (10 min window) | slightly longer requests |
+| Lull detection | after 15 s without speech, 2 topics to restart | 1 request per lull |
+| Callbacks | one topic may name an earlier point to pick up (10 min window) | slightly longer requests |
 | Term explainer | one-line explanation of an unusual term the partner used | slightly longer requests |
-| ☰ Exit line | menu item → 2 polite ways to wrap up | 1 request |
+| ☰ Polite exit | menu item → 2 keyword ideas to wrap up politely | 1 request |
 | ☰ Recap | menu item → 2-line summary of the last minutes | 1 request |
 
 ☰ = contextual menu on the glasses (tap, then long press). Names and all

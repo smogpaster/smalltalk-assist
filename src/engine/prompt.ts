@@ -1,4 +1,4 @@
-import type { SuggestionStyle, TranscriptSegment } from '../core/types'
+import type { TranscriptSegment } from '../core/types'
 import type { LlmRequest } from '../llm/types'
 import { formatForPrompt } from './transcript'
 
@@ -41,8 +41,6 @@ export interface PromptInput {
   withSpeakers: boolean
   context?: PromptContext
   features?: PromptFeatures
-  /** Default "mixed": reply ideas and questions. */
-  style?: SuggestionStyle
 }
 
 /** On-demand requests from the contextual menu or the lull detector. */
@@ -60,31 +58,13 @@ function contextLines(context: PromptContext | undefined): string[] {
   return out
 }
 
-/** Which kinds to produce, and how to help with a question from the partner. */
-function styleLines(style: SuggestionStyle): string[] {
-  switch (style) {
-    case 'mixed':
-      return [
-        'Mix kinds: "q" = a question to ask the other person, "r" = a reply idea or short anecdote hook.',
-        'If the partner\'s last line is a question, the first suggestion must be a short answer idea to exactly that question (kind "r").',
-      ]
-    case 'hooks':
-      return [
-        'Never write out what the wearer should say. Use only these kinds: "a" = a keyword hook of 2-6 words the wearer can pick up in their own words (a topic, detail or angle), "q" = a follow-up question to ask the other person.',
-        'If the partner\'s last line is a question, the first item must be kind "a": keywords the wearer could draw on to answer it – not a formulated answer.',
-      ]
-    case 'questions':
-      return [
-        'Use only kind "q": follow-up questions the wearer could ask the other person. Never write answers or statements for the wearer.',
-        'If the partner\'s last line is a question, the wearer answers it themselves; suggest questions that fit once they have answered.',
-      ]
-  }
-}
+/** Topic keywords only: the wearer puts them into their own words. */
+const KEYWORD_RULE = 'Write keywords, never sentences: 2-5 words each (Chinese, Japanese, Korean: at most 12 characters), no question, no verb phrase to read out, no punctuation at the end.'
 
 function featureLines(features: PromptFeatures | undefined): string[] {
   if (!features) return []
   const out: string[] = []
-  if (features.recall) out.push('One suggestion may instead pick up something the partner mentioned earlier and could be continued now (kind "b", e.g. "You mentioned … – how did it go?").')
+  if (features.recall) out.push('One item may instead name something the partner mentioned earlier that could be picked up again now (kind "b", keywords, e.g. "Her move to Berlin").')
   if (features.terms) out.push('If the partner just used an uncommon technical term, abbreviation or name the wearer may not know, add one item of kind "d": "Term: explanation" (max 12 words). Otherwise no "d" item.')
   if (features.names) out.push('If someone introduced themselves or was named in the conversation, list them in "n": [{"n":"Name","i":"2-5 word note"}]. Otherwise "n": [].')
   return out
@@ -92,11 +72,11 @@ function featureLines(features: PromptFeatures | undefined): string[] {
 
 const SPECIAL_TASKS: Record<SpecialKind, { task: (count: number) => string; kind: string }> = {
   topic: {
-    task: n => `The wearer wants to change the topic now. Suggest ${n} elegant, natural transitions to a new topic that fits the background and the conversation so far.`,
+    task: n => `The wearer wants to change the topic now. Suggest ${n} new topics that fit the background and the conversation so far and are easy to move to.`,
     kind: 't',
   },
   exit: {
-    task: n => `The wearer wants to end the conversation now. Suggest ${n} polite, warm ways to wrap up (e.g. thank, refer to a next time), fitting the tone.`,
+    task: n => `The wearer wants to end the conversation now. Suggest ${n} polite, warm ways to wrap up as keywords (e.g. "Thanks + see you at the next meetup"), fitting the tone.`,
     kind: 'x',
   },
   recap: {
@@ -104,7 +84,7 @@ const SPECIAL_TASKS: Record<SpecialKind, { task: (count: number) => string; kind
     kind: 'h',
   },
   lull: {
-    task: n => `The conversation has stalled. Suggest ${n} easy openers to get it going again, ideally tied to something said earlier or to the background.`,
+    task: n => `The conversation has stalled. Suggest ${n} easy topics to get it going again, ideally tied to something said earlier or to the background.`,
     kind: 't',
   },
 }
@@ -116,7 +96,9 @@ export function buildSpecialRequest(kind: SpecialKind, input: Omit<PromptInput, 
   const system = [
     'You are a discreet conversation helper. The wearer of smart glasses reads your answer at a glance during a live conversation.',
     special.task(count),
-    `Write in ${languageName(input.outputLanguage)}. Each item at most 14 words, no emoji, no quotation marks in the text.`,
+    kind === 'recap'
+      ? `Write in ${languageName(input.outputLanguage)}. Each item at most 14 words, no emoji, no quotation marks in the text.`
+      : `Write in ${languageName(input.outputLanguage)}. ${KEYWORD_RULE} No emoji, no quotation marks in the text.`,
     ...contextLines(input.context),
     `Answer ONLY with compact JSON: {"s":[{"k":"${special.kind}","t":"..."}]} – "k" is always "${special.kind}", do not number the items.`,
   ].join('\n')
@@ -139,14 +121,16 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
   const language = languageName(input.outputLanguage)
   const system = [
     'You are a discreet small-talk helper. The wearer of smart glasses reads your suggestions at a glance during a live conversation.',
-    `Suggest ${input.count} things the wearer could say next, written in ${language}.`,
-    'Rules: at most 12 words each; natural spoken language; concrete and tied to what was just said; no emoji; no quotation marks anywhere in the text; never repeat what was already said.',
-    ...styleLines(input.style ?? 'mixed'),
+    `Suggest ${input.count} topics the wearer could bring up next, written in ${language}. The wearer talks in their own words; you only give the topic.`,
+    KEYWORD_RULE,
+    'Topics are concrete and tied to what was just said (a detail, a related experience, an angle worth asking about); no emoji; no quotation marks anywhere in the text; never a topic that was already covered.',
+    'Use kind "a" for every topic.',
+    'If the partner\'s last line is a question, the first topic must be keywords the wearer could draw on to answer exactly that question – not a formulated answer.',
     ...featureLines(input.features),
     ...contextLines(input.context),
     input.features?.names
-      ? 'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."}],"n":[]}'
-      : 'Answer ONLY with compact JSON: {"s":[{"k":"q","t":"..."},{"k":"r","t":"..."}]}',
+      ? 'Answer ONLY with compact JSON: {"s":[{"k":"a","t":"..."}],"n":[]}'
+      : 'Answer ONLY with compact JSON: {"s":[{"k":"a","t":"..."},{"k":"a","t":"..."}]}',
   ].join('\n')
 
   const parts: string[] = []
@@ -156,8 +140,8 @@ export function buildSuggestionRequest(input: PromptInput): Pick<LlmRequest, 'sy
   return {
     system,
     messages: [{ role: 'user', content: parts.join('\n\n') }],
-    // ~40 tokens per suggestion plus JSON overhead; CJK needs a bit more.
-    maxTokens: 70 * input.count + 60 + (input.features?.names ? 60 : 0) + (input.features?.terms ? 40 : 0),
+    // Keywords are short; ~25 tokens per item plus JSON overhead, CJK a bit more.
+    maxTokens: 40 * input.count + 60 + (input.features?.names ? 60 : 0) + (input.features?.terms ? 40 : 0),
     temperature: 0.7,
     json: true,
   }

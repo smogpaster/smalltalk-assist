@@ -30,16 +30,16 @@ More, if the portal allows: productivity, social, communication, speech to text,
 
 **Beschreibung:**
 SmallTalk Assist hilft dir, im Gespräch nie um Worte verlegen zu sein. Die App
-hört zu, lässt das Gespräch transkribieren und blendet kurze Vorschläge auf
-deiner G2 ein: passende Fragen und Ideen für Antworten – besonders dann, wenn
-dein Gegenüber dich gerade etwas fragt.
+hört zu, lässt das Gespräch transkribieren und blendet auf deiner G2 kurze
+Themen-Stichworte ein, die du ansprechen kannst – auch dann, wenn dein
+Gegenüber dich gerade etwas fragt. Keine vorgefertigten Sätze: Du redest in
+deinen eigenen Worten.
 
-- Vorschläge im Vorbeischauen, 1–3 gleichzeitig, durchblättern per Wischen
-- wahlweise Antwortideen oder nur Stichpunkte und Fragen – du formulierst selbst
+- Themen im Vorbeischauen, 1–3 gleichzeitig, durchblättern per Wischen
 - Profile (Networking, Familienfeier, Kundentermin …) mit Ton, Themen zum Vermeiden und Zielen
 - Infos zu deinem Gegenüber für das nächste Gespräch
 - erkennt, wer spricht – Vorschläge reagieren auf dein Gegenüber
-- Zusatzfunktionen: Themenwechsel, Namensmerker, Rückbezug, Begriffserklärer, Ausstiegs-Satz, Zusammenfassung, Flaute-Erkennung, Redeanteil-Hinweis
+- Zusatzfunktionen: Themenwechsel, Namensmerker, Rückbezug, Begriffserklärer, höflich aussteigen, Zusammenfassung, Flaute-Erkennung, Redeanteil-Hinweis
 - Deutsch, Englisch, Japanisch und weitere Gesprächssprachen
 - Demo-Modus zum Ausprobieren ohne Keys
 
@@ -51,6 +51,9 @@ zeigt eine Kostenschätzung pro Gesprächsstunde.
 Datenschutz: keine eigenen Server, keine Analyse. Transkripte und Vorschläge
 werden nicht gespeichert. Bitte informiere dein Gegenüber.
 
+**Release Notes 1.1.0:** Statt fertiger Sätze zeigt die App jetzt nur noch
+kurze Themen-Stichworte – du sprichst in deinen eigenen Worten.
+
 **Release Notes 1.0.0:** Live-Gesprächsvorschläge auf der G2 mit eigenen
 Spracherkennungs- und KI-Keys, Profilen und optionalen Zusatzfunktionen.
 
@@ -61,17 +64,16 @@ Spracherkennungs- und KI-Keys, Profilen und optionalen Zusatzfunktionen.
 **Tagline (as in the portal):** Never get that awful silence again
 
 **Description:**
-SmallTalk Assist makes sure you never run out of things to say. It listens,
-has the conversation transcribed and shows short suggestions on your G2:
-questions to ask and ideas for replies – especially when the other person has
-just asked you something.
+SmallTalk Assist makes sure you never run out of things to talk about. It
+listens, has the conversation transcribed and shows short topic keywords on
+your G2 that you can bring up – also when the other person has just asked you
+something. No scripted lines: you do the talking, in your own words.
 
-- Glanceable suggestions, 1–3 at a time, swipe to page
-- Reply ideas, or just keywords and questions – you do the talking
+- Glanceable topics, 1–3 at a time, swipe to page
 - Profiles (networking, family party, client meeting …) with tone, topics to avoid and goals
 - Notes about the person you're meeting
 - Knows who is speaking – suggestions react to the other person
-- Extras: change topic, remember names, callbacks, term explainer, exit line, recap, lull detection, talk-share hint
+- Extras: change topic, remember names, callbacks, term explainer, polite exit, recap, lull detection, talk-share hint
 - English, German, Japanese and more conversation languages
 - Demo mode to try it without keys
 
@@ -83,6 +85,9 @@ per hour of conversation.
 Privacy: no servers of our own, no analytics. Transcripts and suggestions are
 not stored. Please tell the people you talk to.
 
+**Release notes 1.1.0:** Instead of ready-made sentences the app now shows
+short topic keywords only – you talk in your own words.
+
 **Release notes 1.0.0:** Live conversation suggestions on the G2 with your own
 speech and AI keys, profiles and optional extras.
 
@@ -93,15 +98,15 @@ speech and AI keys, profiles and optional extras.
 **キャッチコピー：** 会話のヒントをグラスにリアルタイム表示。あなた自身のAIキーで。
 
 **説明：**
-SmallTalk Assist は会話を聞き取り、G2 に短い提案を表示します。相手への質問や
-返答のアイデアを、特に相手から質問されたときにすぐ提案します。
+SmallTalk Assist は会話を聞き取り、話題にできる短いキーワードを G2 に表示します。
+相手から質問されたときも、答えるためのキーワードを示します。決まった台詞は
+なく、話すのはあなた自身の言葉です。
 
-- ひと目で読める提案（同時に1〜3件、スワイプで切り替え）
-- 返答案か、キーワードと質問だけかを選択可能
+- ひと目で読める話題（同時に1〜3件、スワイプで切り替え）
 - プロフィール（ネットワーキング、家族の集まり、商談など）：トーン、避けたい話題、目的
 - 会話相手のメモ
 - 話者を判別し、相手の発言に反応
-- 追加機能：話題を変える、名前メモ、振り返り、用語の説明、切り上げの一言、要約、沈黙の検知、発言量のヒント
+- 追加機能：話題を変える、名前メモ、振り返り、用語の説明、切り上げ方、要約、沈黙の検知、発言量のヒント
 - 日本語・英語・ドイツ語ほか多言語の会話に対応
 - キー不要のデモモード
 
@@ -111,6 +116,9 @@ AI（Claude、OpenAI、Gemini、Mistral、OpenAI互換）を選べます。1時�
 
 プライバシー：独自サーバーなし、分析なし。文字起こしと提案は保存されません。
 会話の相手にお知らせください。
+
+**リリースノート 1.1.0：** 完成した文章の代わりに、短い話題のキーワードだけを
+表示するようになりました。話すのはあなた自身の言葉です。
 
 **リリースノート 1.0.0：** 自分の音声認識・AIキーで使える、G2向けリアルタイム
 会話提案。プロフィールと追加機能付き。

@@ -15,10 +15,11 @@ export interface TranscriptSegment {
   endMs: number
 }
 
-export type SuggestionKind = 'question' | 'reply' | 'hook' | 'topic' | 'exit' | 'recall' | 'term' | 'hint'
-
-/** What the wearer wants to see: formulated replies, or only hooks and questions. */
-export type SuggestionStyle = 'mixed' | 'hooks' | 'questions'
+/**
+ * The app suggests topics, never sentences to read out: "hook" is a regular
+ * topic keyword, the others come from extras and menu requests.
+ */
+export type SuggestionKind = 'hook' | 'topic' | 'exit' | 'recall' | 'term' | 'hint'
 
 export interface Suggestion {
   kind: SuggestionKind

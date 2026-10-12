@@ -4,11 +4,12 @@ import type { Suggestion, SuggestionKind } from '../core/types'
  * Wire format between the LLM and the app. Deliberately tiny to save output
  * tokens (= latency and cost):
  *
- *   {"s":[{"k":"q","t":"…"},{"k":"r","t":"…"}]}
+ *   {"s":[{"k":"a","t":"…"},{"k":"a","t":"…"}]}
+ *
+ * Kinds that are not listed here (e.g. a question "q" a model still sends)
+ * are dropped: the app never shows sentences to read out.
  */
 const KIND_CODES: Record<string, SuggestionKind> = {
-  q: 'question',
-  r: 'reply',
   a: 'hook',
   t: 'topic',
   x: 'exit',

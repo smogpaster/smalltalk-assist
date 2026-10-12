@@ -86,7 +86,7 @@ describe('engine extras', () => {
   })
 
   it('reports names found in the answer', async () => {
-    const llm = new ScriptedLlm('{"s":[{"k":"q","t":"Hallo Miriam!"}],"n":[{"n":"Miriam","i":"Investorin"}]}')
+    const llm = new ScriptedLlm('{"s":[{"k":"a","t":"Hallo Miriam!"}],"n":[{"n":"Miriam","i":"Investorin"}]}')
     const transcript = new Transcript()
     const names: string[] = []
     const engine = new SuggestionEngine({
@@ -184,7 +184,7 @@ describe('menu and glasses', () => {
   })
 
   it('shows the talk-share hint above suggestions without overflowing', () => {
-    const suggestions = [1, 2, 3].map(i => ({ kind: 'question' as const, text: `Eine ziemlich lange Frage Nummer ${i} die umbrechen muss und noch länger wird`.repeat(2) }))
+    const suggestions = [1, 2, 3].map(i => ({ kind: 'hook' as const, text: `Eine ziemlich lange Frage Nummer ${i} die umbrechen muss und noch länger wird`.repeat(2) }))
     const view = buildGlassesView({ phase: 'recording', demo: false, suggestions, page: 0, perPage: 3, hint: t('extra.talkShare.hint', { pct: 78 }) }, t)
     expect(view.body.startsWith('• Du redest viel (78 %)')).toBe(true)
     expect(lineCount(view.body, BODY_INNER_WIDTH)).toBeLessThanOrEqual(BODY_LINES)
@@ -204,7 +204,7 @@ describe('explicit requests win over regular suggestions', () => {
         new Promise((resolve, reject) => {
           calls.push(request)
           const exit = request.system.includes('end the conversation')
-          const timer = setTimeout(() => resolve(exit ? '{"s":[{"k":"x","t":"Ich muss leider los."}]}' : '{"s":[{"k":"q","t":"Und dann?"}]}'), 2000)
+          const timer = setTimeout(() => resolve(exit ? '{"s":[{"k":"x","t":"Ich muss leider los."}]}' : '{"s":[{"k":"a","t":"Und dann?"}]}'), 2000)
           request.signal?.addEventListener('abort', () => {
             clearTimeout(timer)
             reject(new ProviderError('slow', 'aborted', 'aborted'))
@@ -241,7 +241,7 @@ describe('explicit requests win over regular suggestions', () => {
     expect(calls).toHaveLength(2)
     expect(last.suggestions[0].kind).toBe('exit')
     await vi.advanceTimersByTimeAsync(10_000)
-    expect(last.suggestions[0]).toEqual({ kind: 'question', text: 'Und dann?' })
+    expect(last.suggestions[0]).toEqual({ kind: 'hook', text: 'Und dann?' })
 
     await session.stop()
     vi.useRealTimers()

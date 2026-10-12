@@ -41,9 +41,9 @@ describe('fitLines', () => {
 
 describe('glasses layout', () => {
   const suggestions: Suggestion[] = [
-    { kind: 'question', text: 'Wie bist du zum Segeln gekommen?' },
-    { kind: 'reply', text: 'Ich war einmal auf der Ostsee.' },
-    { kind: 'question', text: 'Seit wann segelst du?' },
+    { kind: 'hook', text: 'Wie bist du zum Segeln gekommen?' },
+    { kind: 'hook', text: 'Ich war einmal auf der Ostsee.' },
+    { kind: 'hook', text: 'Seit wann segelst du?' },
   ]
 
   it('never overflows the body for 1–3 suggestions per page', () => {
@@ -58,7 +58,7 @@ describe('glasses layout', () => {
   it('shows a page counter and the right slice', () => {
     const view = buildGlassesView({ phase: 'recording', demo: false, suggestions, page: 1, perPage: 2 }, t)
     expect(view.header).toMatch(/^● REC\s+2\/2$/)
-    expect(view.body).toBe('? Seit wann segelst du?')
+    expect(view.body).toBe('→ Seit wann segelst du?')
     expect(pageCount(3, 2)).toBe(2)
   })
 

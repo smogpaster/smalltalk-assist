@@ -30,7 +30,7 @@ describe('ConversationSession in demo mode', () => {
     const other = last.transcript.find(s => s.isFinal && s.text.startsWith('Hallo, ich glaube'))
     expect(other?.speaker).toBe('other')
     expect(last.suggestions.length).toBe(3)
-    expect(last.suggestions[0].text).toContain('Miriam')
+    expect(last.suggestions[0]).toEqual({ kind: 'hook', text: 'Wie sie die Gastgeber kennt' })
 
     await vi.advanceTimersByTimeAsync(4000)
     const self = last.transcript.find(s => s.isFinal && s.text.startsWith('Freut mich'))

@@ -1,4 +1,4 @@
-import type { LanguageCode, SuggestionStyle } from '../core/types'
+import type { LanguageCode } from '../core/types'
 import { isUiLanguage, type UiLanguage } from '../i18n'
 import { isConversationLanguage, type ConversationLanguage } from '../stt/languages'
 import { isSttProviderId, type SttProviderId } from '../stt/registry'
@@ -42,7 +42,6 @@ export interface Settings {
   /** Language of the suggestions: same as the conversation, or a fixed one. */
   suggestionLanguage: 'same' | ConversationLanguage
   /** Formulated reply ideas + questions, or only keyword hooks + questions, or only questions. */
-  suggestionStyle: SuggestionStyle
   /** Pause after the other person's sentence before asking for suggestions. */
   pauseMs: 300 | 600 | 900 | 1500
   /** Minimum time between two LLM requests. */
@@ -67,7 +66,6 @@ export const DEFAULT_SETTINGS: Settings = {
   llmProvider: null,
   llmModels: {},
   suggestionLanguage: 'same',
-  suggestionStyle: 'mixed',
   pauseMs: 300,
   minIntervalSec: 6,
   maxPerMinute: 6,
@@ -98,7 +96,6 @@ export function migrateSettings(raw: unknown): Settings {
     diarization: pick(r.diarization, (v): v is boolean => typeof v === 'boolean', DEFAULT_SETTINGS.diarization),
     llmProvider: pick(r.llmProvider, (v): v is LlmProviderId | null => v === null || isLlmProviderId(v), DEFAULT_SETTINGS.llmProvider),
     llmModels: sanitizeMap(r.llmModels, isLlmProviderId),
-    suggestionStyle: pick(r.suggestionStyle, (v): v is SuggestionStyle => v === 'mixed' || v === 'hooks' || v === 'questions', DEFAULT_SETTINGS.suggestionStyle),
     suggestionLanguage: pick(r.suggestionLanguage, (v): v is Settings['suggestionLanguage'] => v === 'same' || isConversationLanguage(v), DEFAULT_SETTINGS.suggestionLanguage),
     // v1 defaulted to 900 ms on top of the STT's own end-of-sentence wait; v2 lowers the default.
     pauseMs: r.version === SETTINGS_VERSION

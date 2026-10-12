@@ -13,7 +13,7 @@ class FakeLlm implements LlmProvider {
   readonly id = 'fake'
   readonly model = 'fake'
   calls: LlmRequest[] = []
-  response = '{"s":[{"k":"q","t":"Und du?"},{"k":"r","t":"Ich auch."}]}'
+  response = '{"s":[{"k":"a","t":"Und du?"},{"k":"a","t":"Ich auch."}]}'
   delayMs = 100
   error: ProviderError | null = null
 
@@ -89,10 +89,10 @@ describe('SuggestionEngine', () => {
   it('streams: shows the first suggestion before the answer is complete', async () => {
     feed(seg('1', 'Hallo.', 'other'))
     await vi.advanceTimersByTimeAsync(500 + 50)
-    expect(results).toEqual([{ suggestions: [{ kind: 'question', text: 'Und du?' }], partial: true }])
+    expect(results).toEqual([{ suggestions: [{ kind: 'hook', text: 'Und du?' }], partial: true }])
     await vi.advanceTimersByTimeAsync(50)
     expect(results.at(-1)).toEqual({
-      suggestions: [{ kind: 'question', text: 'Und du?' }, { kind: 'reply', text: 'Ich auch.' }],
+      suggestions: [{ kind: 'hook', text: 'Und du?' }, { kind: 'hook', text: 'Ich auch.' }],
       partial: false,
     })
   })

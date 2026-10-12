@@ -1,5 +1,5 @@
 import { toProviderError, type ProviderError } from '../core/errors'
-import type { Suggestion, SuggestionKind, SuggestionStyle, TranscriptSegment } from '../core/types'
+import type { Suggestion, SuggestionKind, TranscriptSegment } from '../core/types'
 import { trace } from '../diag/trace'
 import type { LlmProvider } from '../llm/types'
 import { outline, parseNames, parsePartialSuggestions, parseSuggestions, type NameNote } from './format'
@@ -42,8 +42,6 @@ export interface EngineOptions {
   context?: () => PromptContext | undefined
   /** Extras that ride along with every request (names, recall, terms). */
   features?: () => PromptFeatures
-  /** Formulated replies, or only hooks and questions. */
-  style?: () => SuggestionStyle
   /** Silence (ms) after which conversation openers are requested; null = off. */
   lullMs?: () => number | null
   onNames?(names: NameNote[]): void
@@ -222,7 +220,6 @@ export class SuggestionEngine {
       withSpeakers: segments.some(s => s.speaker !== 'unknown'),
       context: this.options.context?.(),
       features,
-      style: this.options.style?.(),
     })
     await this.run(request, reason, features?.names === true, null)
   }
