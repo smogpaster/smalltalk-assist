@@ -105,14 +105,14 @@ describe('settings', () => {
     const kv = new MemoryKeyValueStore()
     const store = new SettingsStore(kv, 100)
     store.update({ mode: 'live' })
-    store.update({ suggestionsPerPage: 3 })
+    store.update({ suggestionsPerPage: 1 })
     expect(kv.data.size).toBe(0)
     await vi.advanceTimersByTimeAsync(100)
-    expect(JSON.parse(kv.data.get('settings')!)).toMatchObject({ mode: 'live', suggestionsPerPage: 3 })
+    expect(JSON.parse(kv.data.get('settings')!)).toMatchObject({ mode: 'live', suggestionsPerPage: 1 })
     vi.useRealTimers()
 
     const reloaded = new SettingsStore(kv)
-    expect(await reloaded.load()).toMatchObject({ mode: 'live', suggestionsPerPage: 3 })
+    expect(await reloaded.load()).toMatchObject({ mode: 'live', suggestionsPerPage: 1 })
   })
 })
 

@@ -57,7 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mode: 'demo',
   micSource: 'glasses',
   demoLanguage: 'de',
-  suggestionsPerPage: 2,
+  suggestionsPerPage: 3,
   onboardingDone: false,
   conversationLanguage: 'de',
   sttProvider: null,
