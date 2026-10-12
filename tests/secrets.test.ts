@@ -16,6 +16,8 @@ describe('no credential literals in the app source', () => {
     /Bearer [A-Za-z0-9._~+/-]+/,
     /(Token|Basic) [A-Za-z0-9._~+/=-]{8,}/,
     /sk-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{20,}|gsk_[A-Za-z0-9]{16,}|xai-[A-Za-z0-9]{16,}/,
+    // A literal value for a key field, even a dummy one (1.0.0 was rejected for this).
+    /(api_?key|apiKey|token|secret|password)['"]?\s*[:=]\s*['"`][^'"`$]{6,}['"`]/i,
   ]
   for (const file of [...sourceFiles('src'), 'index.html']) {
     it(file, () => {

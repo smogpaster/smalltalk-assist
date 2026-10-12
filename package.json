@@ -14,7 +14,7 @@
     "simulate": "evenhub-simulator http://localhost:5180",
     "simulate:auto": "evenhub-simulator --automation-port 9898 http://localhost:5180",
     "qr": "evenhub qr --http --port 5180",
-    "pack": "npm run build && evenhub pack app.json dist -o smalltalk-assist.ehpk"
+    "pack": "npm run build && node scripts/scan-bundle.mjs && evenhub pack app.json dist -o smalltalk-assist.ehpk"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

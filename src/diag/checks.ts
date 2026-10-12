@@ -54,7 +54,8 @@ export function checkWebSocket(timeoutMs = 10_000): Promise<CheckResult> {
       details.push(`open after ${elapsed()} ms`)
       socket!.send(
         JSON.stringify({
-          api_key: 'invalid-diagnostic-key',
+          // Random throwaway value: no credential-like literal in the bundle.
+          api_key: Math.random().toString(36).slice(2),
           model: 'stt-rt-preview',
           audio_format: 'pcm_s16le',
           sample_rate: 16000,

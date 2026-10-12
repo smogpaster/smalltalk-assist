@@ -7,7 +7,7 @@ Based on hub.evenrealities.com/docs/ship/app-submission (checked 2026-09-24).
 - [ ] `app.json`: version bumped (semver, no suffix), `min_sdk_version` 0.0.16 (floor 0.0.14), `min_app_version` 2.2.10
 - [ ] Name "SmallTalk Assist" (16 chars, no "Even") – same on glasses and portal
 - [ ] Every permission is used: `g2-microphone` (default mic), `phone-microphone` (selectable), `network` (whitelist = provider origins; `tests/manifest.test.ts` checks it matches the adapters)
-- [ ] No API keys in the bundle (keys are entered by users at runtime; `.env*` unused)
+- [ ] No API keys in the bundle, not even dummy ones (1.0.0 was rejected for a placeholder key): `npm run pack` runs `scripts/scan-bundle.mjs` and stops on anything credential-like
 - [ ] `npm test` and `npm run typecheck` green
 
 ## Package
